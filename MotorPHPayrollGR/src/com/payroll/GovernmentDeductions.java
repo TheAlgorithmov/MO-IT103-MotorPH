@@ -1,6 +1,7 @@
 //Government Deductions Calculations
 package com.payroll;
 
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
@@ -11,46 +12,52 @@ public class GovernmentDeductions {
     // ------------------------------------------------------------------------------------
 
     public static double calculateSSS(double grossIncome) {
-        // SSS CONTRIBUTION (Jan 2024 Table)
-        NavigableMap<Double, Double> sssTable = new TreeMap<>();
-        sssTable.put(3250.0, 135.00);
-        sssTable.put(3750.0, 157.50);
-        sssTable.put(4250.0, 180.00);
-        sssTable.put(4750.0, 202.50);
-        sssTable.put(5250.0, 225.00);
-        sssTable.put(5750.0, 247.50);
-        sssTable.put(6250.0, 270.00);
-        sssTable.put(6750.0, 292.50);
-        sssTable.put(7250.0, 315.00);
-        sssTable.put(7750.0, 337.50);
-        sssTable.put(8250.0, 360.00);
-        sssTable.put(8750.0, 382.50);
-        sssTable.put(9250.0, 405.00);
-        sssTable.put(9750.0, 427.50);
-        sssTable.put(10250.0, 450.00);
-        sssTable.put(10750.0, 472.50);
-        sssTable.put(11250.0, 495.00);
-        sssTable.put(11750.0, 517.50);
-        sssTable.put(12250.0, 540.00);
-        sssTable.put(12750.0, 562.50);
-        sssTable.put(13250.0, 585.00);
-        sssTable.put(13750.0, 607.50);
-        sssTable.put(14250.0, 630.00);
-        sssTable.put(14750.0, 652.50);
-        sssTable.put(15250.0, 675.00);
-        sssTable.put(15750.0, 697.50);
-        sssTable.put(16250.0, 720.00);
-        sssTable.put(16750.0, 742.50);
-        sssTable.put(17250.0, 765.00);
-        sssTable.put(17750.0, 787.50);
-        sssTable.put(18250.0, 810.00);
-        sssTable.put(18750.0, 832.50);
-        sssTable.put(19250.0, 855.00);
-        sssTable.put(19750.0, 877.50);
-        sssTable.put(20250.0, 900.00);
-        sssTable.put(24750.0, 1125.00);
-        return sssTable.floorEntry(grossIncome).getValue();
+    // SSS CONTRIBUTION (Jan 2024 Table)
+    NavigableMap<Double, Double> sssTable = new TreeMap<>();
+    sssTable.put(3250.0, 135.00);
+    sssTable.put(3750.0, 157.50);
+    sssTable.put(4250.0, 180.00);
+    sssTable.put(4750.0, 202.50);
+    sssTable.put(5250.0, 225.00);
+    sssTable.put(5750.0, 247.50);
+    sssTable.put(6250.0, 270.00);
+    sssTable.put(6750.0, 292.50);
+    sssTable.put(7250.0, 315.00);
+    sssTable.put(7750.0, 337.50);
+    sssTable.put(8250.0, 360.00);
+    sssTable.put(8750.0, 382.50);
+    sssTable.put(9250.0, 405.00);
+    sssTable.put(9750.0, 427.50);
+    sssTable.put(10250.0, 450.00);
+    sssTable.put(10750.0, 472.50);
+    sssTable.put(11250.0, 495.00);
+    sssTable.put(11750.0, 517.50);
+    sssTable.put(12250.0, 540.00);
+    sssTable.put(12750.0, 562.50);
+    sssTable.put(13250.0, 585.00);
+    sssTable.put(13750.0, 607.50);
+    sssTable.put(14250.0, 630.00);
+    sssTable.put(14750.0, 652.50);
+    sssTable.put(15250.0, 675.00);
+    sssTable.put(15750.0, 697.50);
+    sssTable.put(16250.0, 720.00);
+    sssTable.put(16750.0, 742.50);
+    sssTable.put(17250.0, 765.00);
+    sssTable.put(17750.0, 787.50);
+    sssTable.put(18250.0, 810.00);
+    sssTable.put(18750.0, 832.50);
+    sssTable.put(19250.0, 855.00);
+    sssTable.put(19750.0, 877.50);
+    sssTable.put(20250.0, 900.00);
+    sssTable.put(24750.0, 1125.00);
+    // Fix: Check if floorEntry() is null
+    Map.Entry<Double, Double> entry = sssTable.floorEntry(grossIncome);
+    if (entry == null) {
+        return 0.00;  // Return 0 if no valid SSS bracket found
     }
+
+    return entry.getValue();
+ }
 
     public static double calculatePhilHealth(double grossIncome) {
         // PHILHEALTH CONTRIBUTION (Deducted Monthly)
