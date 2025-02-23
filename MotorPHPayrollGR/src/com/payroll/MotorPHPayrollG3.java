@@ -8,17 +8,17 @@ public class MotorPHPayrollG3 {
         System.out.println("Starting Payroll System...");
 
         //Load Employee Data
-        Map<String, EmployeeData> employees = EmployeeData.loadEmployeeData("EmployeeData.csv");
+        Map<String, EmployeeData> employees = EmployeeData.loadEmployeeData("src/com/payroll/EmployeeData.csv");
         if (employees.isEmpty()) {
             System.err.println("No employees loaded. Exiting...");
             return;
         }
 
         //Load De Minimis Benefits from EmployeeData.csv
-        Map<String, DeMinimisBenefits> benefits = DeMinimisBenefits.loadBenefits("EmployeeData.csv");
+        Map<String, DeMinimisBenefits> benefits = DeMinimisBenefits.loadBenefits("src/com/payroll/EmployeeData.csv");
 
         //Load Time Entries
-        List<TimeEntry> timeEntries = TimeEntry.loadTimeEntries("EmployeeTimeEntries.csv");
+        List<TimeEntry> timeEntries = TimeEntry.loadTimeEntries("src/com/payroll/EmployeeTimeEntries.csv");
         if (timeEntries.isEmpty()) {
             System.err.println("No time entries loaded. Exiting...");
             return;
