@@ -67,7 +67,9 @@ public class MotorPHPayrollG3 {
             System.out.println("---------------- FINAL PAYROLL REPORT (WEEKLY) ----------------");
             System.out.printf(" Employee ID: %s | Name: %s | DOB: %s%n", 
                 employee.getEmpId(), employee.getName(), employee.getDob());
-
+            // ✅ Include Hourly Rate, Status, and Position
+            System.out.printf(" Hourly Rate: PHP %.2f | Status: %s | Position: %s%n", 
+            employee.getHourlyRate(), employee.getStatus(), employee.getPosition());
             //Extract and Display Week Number
             String[] keyParts = weeklyKey.split("-");
             String weekNumber = (keyParts.length > 1) ? keyParts[1] : "Unknown";

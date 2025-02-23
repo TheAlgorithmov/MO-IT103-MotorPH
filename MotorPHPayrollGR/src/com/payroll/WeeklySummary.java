@@ -10,6 +10,7 @@ public class WeeklySummary {
     private double totalWorkHours = 0, totalOvertime = 0, totalLateDeductions = 0, totalOvertimePay = 0;
     private double totalHolidayPay = 0, totalRestDayOTPay = 0;
     private final StringBuilder breakdownOutput = new StringBuilder();
+    private double totalLateHours = 0;
 
     public WeeklySummary(EmployeeData employee) {
         this.employee = employee;
@@ -17,7 +18,10 @@ public class WeeklySummary {
 
     public void addDailyWork(LocalDate date, double rawDailyWorkHours, double lateMinutes, double lateDeduction,
                              boolean isHoliday, boolean isRestDay, boolean isHolidayRestDay, double holidayMultiplier) {
-
+        //Convert late minutes to hours
+        double lateHours = lateMinutes / 60.0;
+        totalLateHours += lateHours; // ✅ Accumulate total late hours
+        
         //Deduct 1-hour unpaid lunch from raw work hours
         double dailyWorkHours = Math.max(0, rawDailyWorkHours - 1); // Ensure it doesn’t go negative
 
@@ -49,8 +53,8 @@ public class WeeklySummary {
 
         //Add breakdown log
         breakdownOutput.append(String.format(" %s | %-17s | %8.2f | %.2f   | PHP %8.2f | %12.2f | PHP %8.2f%n",
-                date.toString(), (isHoliday ? "Holiday" : isRestDay ? "Rest Day" : "Regular Workday"),
-                overtimeHours, 1.25, overtimePay, lateMinutes, lateDeduction));
+            date.toString(), (isHoliday ? "Holiday" : isRestDay ? "Rest Day" : "Regular Workday"),
+            overtimeHours, 1.25, overtimePay, lateMinutes, lateDeduction));
     }
 
     // Getters for Payroll Calculation
@@ -71,6 +75,7 @@ public class WeeklySummary {
             + String.format(" Total Overtime Pay: PHP %.2f%n", totalOvertimePay)
             + String.format(" Total Holiday Pay: PHP %.2f%n", totalHolidayPay)
             + String.format(" Total Rest Day OT Pay: PHP %.2f%n", totalRestDayOTPay)
+            + String.format(" Total Late Hours: %.2f%n", totalLateHours)
             + String.format(" Total Late Deductions: PHP %.2f%n", totalLateDeductions)
             + "--------------------------------------------------------------\n"
             + getBreakdownReport();
