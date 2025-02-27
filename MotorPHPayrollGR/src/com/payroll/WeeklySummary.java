@@ -1,71 +1,94 @@
-// Employee's Weekly Worked Hours Calculator
 package com.payroll;
 
 import java.time.*;
 import java.time.temporal.WeekFields;
 import java.util.*;
 
+/**
+ * WeeklySummary - Computes an employee's weekly work hours, overtime, and deductions.
+ */
 public class WeeklySummary {
     private final EmployeeData employee;
-    private double totalWorkHours = 0, totalOvertime = 0, totalLateDeductions = 0, totalOvertimePay = 0;
-    private double totalHolidayPay = 0, totalRestDayOTPay = 0;
+    private float totalWorkHours = 0f, totalOvertime = 0f, totalLateDeductions = 0f, totalOvertimePay = 0f;
+    private float totalHolidayPay = 0f, totalRestDayOTPay = 0f, totalLateHours = 0f;
     private final StringBuilder breakdownOutput = new StringBuilder();
-    private double totalLateHours = 0;
 
+    /**
+     * Constructor to initialize weekly summary for an employee.
+     * 
+     * @param employee The employee for whom the weekly summary is generated.
+     */
     public WeeklySummary(EmployeeData employee) {
         this.employee = employee;
     }
 
-    public void addDailyWork(LocalDate date, double rawDailyWorkHours, double lateMinutes, double lateDeduction,
-                             boolean isHoliday, boolean isRestDay, boolean isHolidayRestDay, double holidayMultiplier) {
-        //Convert late minutes to hours
-        double lateHours = lateMinutes / 60.0;
-        totalLateHours += lateHours; // ✅ Accumulate total late hours
-        
-        //Deduct 1-hour unpaid lunch from raw work hours
-        double dailyWorkHours = Math.max(0, rawDailyWorkHours - 1); // Ensure it doesn’t go negative
+    /**
+     * Adds daily work details to the weekly summary.
+     * 
+     * @param date               Work date
+     * @param rawDailyWorkHours  Hours worked before deductions
+     * @param lateMinutes        Late minutes
+     * @param lateDeduction      Salary deduction due to lateness
+     * @param isHoliday          Whether the day is a holiday
+     * @param isRestDay          Whether the day is a scheduled rest day
+     * @param isHolidayRestDay   Whether the day is a holiday that falls on a rest day
+     * @param holidayMultiplier  Multiplier for holiday pay
+     */
+    public void addDailyWork(LocalDate date, float rawDailyWorkHours, float lateMinutes, float lateDeduction,
+                             boolean isHoliday, boolean isRestDay, boolean isHolidayRestDay, float holidayMultiplier) {
+        // Convert late minutes to hours
+        float lateHours = lateMinutes / 60f;
+        totalLateHours += lateHours;
 
-        //Regular work shift is 8 hours
-        double regularWorkHours = Math.min(8, dailyWorkHours);
-        double overtimeHours = (dailyWorkHours >= 9) ? dailyWorkHours - 8 : 0;  //OT applies only if 9+ hours worked
+        // Deduct 1-hour unpaid lunch from raw work hours
+        float dailyWorkHours = Math.max(0f, rawDailyWorkHours - 1f);
 
-        totalWorkHours += dailyWorkHours;  //Track all worked hours (not capped at 40)
-        totalOvertime += overtimeHours;    //Only valid overtime is counted
+        // Regular work shift is 8 hours
+        float regularWorkHours = Math.min(8f, dailyWorkHours);
+        float overtimeHours = (dailyWorkHours >= 9f) ? dailyWorkHours - 8f : 0f;
+
+        totalWorkHours += dailyWorkHours;
+        totalOvertime += overtimeHours;
         totalLateDeductions += lateDeduction;
 
-        //Compute Holiday Pay (if applicable)
-        double dailyHolidayPay = 0;
+        // Compute Holiday Pay (if applicable)
+        float dailyHolidayPay = 0f;
         if (isHoliday) {
-            dailyHolidayPay = dailyWorkHours * employee.getHourlyRate() * (holidayMultiplier - 1.0);
+            dailyHolidayPay = dailyWorkHours * employee.getHourlyRate() * (holidayMultiplier - 1f);
             totalHolidayPay += dailyHolidayPay;
         }
 
-        //Compute Rest Day OT Pay (if applicable)
-        double dailyRestDayOTPay = 0;
+        // Compute Rest Day OT Pay (if applicable)
+        float dailyRestDayOTPay = 0f;
         if (isRestDay) {
-            dailyRestDayOTPay = dailyWorkHours * employee.getHourlyRate() * 1.5;
+            dailyRestDayOTPay = dailyWorkHours * employee.getHourlyRate() * 1.5f;
             totalRestDayOTPay += dailyRestDayOTPay;
         }
 
-        //Compute Overtime Pay
-        double overtimePay = overtimeHours * employee.getHourlyRate() * 1.25;
+        // Compute Overtime Pay
+        float overtimePay = overtimeHours * employee.getHourlyRate() * 1.25f;
         totalOvertimePay += overtimePay;
 
-        //Add breakdown log
+        // Add breakdown log
         breakdownOutput.append(String.format(" %s | %-17s | %8.2f | %.2f   | PHP %8.2f | %12.2f | PHP %8.2f%n",
             date.toString(), (isHoliday ? "Holiday" : isRestDay ? "Rest Day" : "Regular Workday"),
-            overtimeHours, 1.25, overtimePay, lateMinutes, lateDeduction));
+            overtimeHours, 1.25f, overtimePay, lateMinutes, lateDeduction));
     }
 
-    // Getters for Payroll Calculation
-    public double getTotalWorkHours() { return totalWorkHours; }
-    public double getTotalOvertime() { return totalOvertime; }
-    public double getTotalLateDeductions() { return totalLateDeductions; }
-    public double getTotalOvertimePay() { return totalOvertimePay; }
-    public double getTotalHolidayPay() { return totalHolidayPay; }
-    public double getTotalRestDayOTPay() { return totalRestDayOTPay; }
+    // ** Getters for Payroll Calculation **
+    public float getTotalWorkHours() { return totalWorkHours; }
+    public float getTotalOvertime() { return totalOvertime; }
+    public float getTotalLateDeductions() { return totalLateDeductions; }
+    public float getTotalOvertimePay() { return totalOvertimePay; }
+    public float getTotalHolidayPay() { return totalHolidayPay; }
+    public float getTotalRestDayOTPay() { return totalRestDayOTPay; }
     public EmployeeData getEmployee() { return employee; }
 
+    /**
+     * Generates a summary report for the employee's weekly worked hours.
+     * 
+     * @return A formatted string containing the work summary
+     */
     public String getSummaryReport() {
         return "\n--------------------------------------------------------------\n"
             + " Summary of Work Hours & Deductions \n"
@@ -81,6 +104,11 @@ public class WeeklySummary {
             + getBreakdownReport();
     }
 
+    /**
+     * Generates a breakdown report of daily work logs.
+     * 
+     * @return A formatted breakdown of work hours and deductions
+     */
     public String getBreakdownReport() {
         if (breakdownOutput.length() == 0) {
             return "\n---------------- Overtime & Unpaid Work Hour Deductions Breakdown ----------------\n"
@@ -95,7 +123,13 @@ public class WeeklySummary {
             + "----------------------------------------------------------------------------------------\n";
     }
 
-    //Fixed Weekly Summary Calculation
+    /**
+     * Computes weekly worked hours for each employee from time entries.
+     * 
+     * @param employees    A map of employee data
+     * @param timeEntries  A list of employee time entries
+     * @return A map of weekly summaries for each employee
+     */
     public static Map<String, WeeklySummary> calculateWorkedHours(
         Map<String, EmployeeData> employees, 
         List<TimeEntry> timeEntries) {  
@@ -113,17 +147,17 @@ public class WeeklySummary {
             weeklySummaries.putIfAbsent(weeklyKey, new WeeklySummary(emp));
             WeeklySummary summary = weeklySummaries.get(weeklyKey);
 
-            double dailyWorkHours = entry.getHoursWorked();
-            double rawDailyWorkHours = Math.max(0, dailyWorkHours);  // Prevent negative values
+            float dailyWorkHours = entry.getHoursWorked();
+            float rawDailyWorkHours = Math.max(0f, dailyWorkHours);
 
-            double overtime = (rawDailyWorkHours >= 9) ? rawDailyWorkHours - 8 : 0;  //Only count OT if 9+ hours worked
-            double lateMinutes = Math.max(0, Duration.between(LocalTime.of(8, 30), entry.getClockIn().toLocalTime()).toMinutes());
-            double lateDeduction = (lateMinutes > 0) ? (lateMinutes / 60.0) * emp.getHourlyRate() : 0;
+            float overtime = (rawDailyWorkHours >= 9f) ? rawDailyWorkHours - 8f : 0f;
+            float lateMinutes = Math.max(0f, Duration.between(LocalTime.of(8, 30), entry.getClockIn().toLocalTime()).toMinutes());
+            float lateDeduction = (lateMinutes > 0f) ? (lateMinutes / 60f) * emp.getHourlyRate() : 0f;
 
             boolean isHoliday = entry.isRegularHoliday() || entry.isSpecialNonWorking();
             boolean isRestDay = entry.isRestDay();
             boolean isHolidayRestDay = entry.isHolidayRestDay();
-            double holidayMultiplier = entry.getHolidayMultiplier();
+            float holidayMultiplier = entry.getHolidayMultiplier();
 
             summary.addDailyWork(entry.getClockIn().toLocalDate(), rawDailyWorkHours, lateMinutes, lateDeduction,
                                  isHoliday, isRestDay, isHolidayRestDay, holidayMultiplier);

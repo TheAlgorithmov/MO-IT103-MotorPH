@@ -5,24 +5,67 @@ import java.util.*;
 
 public class DeMinimisBenefits {
     private String empId;
-    private double riceSubsidy;
-    private double phoneAllowance;
-    private double clothingAllowance;
+    private float riceSubsidy;
+    private float phoneAllowance;
+    private float clothingAllowance;
 
-    public DeMinimisBenefits(String empId, double riceSubsidy, double phoneAllowance, double clothingAllowance) {
+    /**
+     * Constructor to initialize employee's de minimis benefits.
+     * 
+     * @param empId            Employee ID
+     * @param riceSubsidy      Rice subsidy allowance
+     * @param phoneAllowance   Phone allowance
+     * @param clothingAllowance Clothing allowance
+     */
+    public DeMinimisBenefits(String empId, float riceSubsidy, float phoneAllowance, float clothingAllowance) {
         this.empId = empId;
         this.riceSubsidy = riceSubsidy;
         this.phoneAllowance = phoneAllowance;
         this.clothingAllowance = clothingAllowance;
     }
 
-    // Go get em!
-    public String getEmpId() { return empId; }
-    public double getRiceSubsidy() { return riceSubsidy; }
-    public double getPhoneAllowance() { return phoneAllowance; }
-    public double getClothingAllowance() { return clothingAllowance; }
+    /**
+     * Retrieves the Employee ID.
+     * 
+     * @return Employee ID as a String
+     */
+    public String getEmpId() { 
+        return empId; 
+    }
 
-    // Load De Minimis Benefits from EmployeeData.csv
+    /**
+     * Retrieves the rice subsidy amount.
+     * 
+     * @return Rice subsidy as a float
+     */
+    public float getRiceSubsidy() { 
+        return riceSubsidy; 
+    }
+
+    /**
+     * Retrieves the phone allowance amount.
+     * 
+     * @return Phone allowance as a float
+     */
+    public float getPhoneAllowance() { 
+        return phoneAllowance; 
+    }
+
+    /**
+     * Retrieves the clothing allowance amount.
+     * 
+     * @return Clothing allowance as a float
+     */
+    public float getClothingAllowance() { 
+        return clothingAllowance; 
+    }
+
+    /**
+     * Loads de minimis benefits data from a CSV file.
+     * 
+     * @param filePath Path to the EmployeeData.csv file
+     * @return A map containing Employee ID as the key and DeMinimisBenefits object as the value
+     */
     public static Map<String, DeMinimisBenefits> loadBenefits(String filePath) {
         Map<String, DeMinimisBenefits> benefitsMap = new HashMap<>();
 
@@ -36,14 +79,16 @@ public class DeMinimisBenefits {
                     continue;
                 }
 
-                String[] data = line.split(","); //Assuming CSV is comma-separated
+                String[] data = line.split(","); // Assuming CSV is comma-separated
 
-                if (data.length >= 8) {  // Ensure at least 8 columns exist
+                // Ensure there are at least 8 columns in the row
+                if (data.length >= 8) {  
                     String empId = data[0].trim();
-                    double riceSubsidy = parseDouble(data[5]);
-                    double phoneAllowance = parseDouble(data[6]);
-                    double clothingAllowance = parseDouble(data[7]);
+                    float riceSubsidy = parseFloat(data[5]);
+                    float phoneAllowance = parseFloat(data[6]);
+                    float clothingAllowance = parseFloat(data[7]);
 
+                    // Store the employee's benefits in the map
                     benefitsMap.put(empId, new DeMinimisBenefits(empId, riceSubsidy, phoneAllowance, clothingAllowance));
                 }
             }
@@ -56,12 +101,17 @@ public class DeMinimisBenefits {
         return benefitsMap;
     }
 
-    // Helper Method to Handle Parsing Errors
-    private static double parseDouble(String value) {
+    /**
+     * Parses a String into a float, ensuring proper error handling.
+     * 
+     * @param value String representation of a float value
+     * @return Parsed float value; defaults to 0.00 if parsing fails
+     */
+    private static float parseFloat(String value) {
         try {
-            return Double.parseDouble(value.replace(",", "").trim()); //Remove commas & parse
+            return Float.parseFloat(value.replace(",", "").trim()); // Remove commas & parse
         } catch (NumberFormatException e) {
-            return 0.00; //Default to 0 if parsing fails
+            return 0.00f; // Default to 0 if parsing fails
         }
     }
 }

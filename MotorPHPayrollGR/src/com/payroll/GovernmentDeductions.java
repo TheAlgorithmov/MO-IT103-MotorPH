@@ -1,89 +1,116 @@
-//Government Deductions Calculations
 package com.payroll;
 
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
+/**
+ * GovernmentDeductions - Computes SSS, PhilHealth, Pag-IBIG, and BIR tax deductions.
+ */
 public class GovernmentDeductions {
 
     // ------------------------------------------------------------------------------------
     // GOVERNMENT DEDUCTIONS (SSS, PhilHealth, Pag-IBIG, BIR Tax)
     // ------------------------------------------------------------------------------------
 
-    public static double calculateSSS(double grossIncome) {
-    // SSS CONTRIBUTION (Jan 2024 Table)
-    NavigableMap<Double, Double> sssTable = new TreeMap<>();
-    sssTable.put(3250.0, 135.00);
-    sssTable.put(3750.0, 157.50);
-    sssTable.put(4250.0, 180.00);
-    sssTable.put(4750.0, 202.50);
-    sssTable.put(5250.0, 225.00);
-    sssTable.put(5750.0, 247.50);
-    sssTable.put(6250.0, 270.00);
-    sssTable.put(6750.0, 292.50);
-    sssTable.put(7250.0, 315.00);
-    sssTable.put(7750.0, 337.50);
-    sssTable.put(8250.0, 360.00);
-    sssTable.put(8750.0, 382.50);
-    sssTable.put(9250.0, 405.00);
-    sssTable.put(9750.0, 427.50);
-    sssTable.put(10250.0, 450.00);
-    sssTable.put(10750.0, 472.50);
-    sssTable.put(11250.0, 495.00);
-    sssTable.put(11750.0, 517.50);
-    sssTable.put(12250.0, 540.00);
-    sssTable.put(12750.0, 562.50);
-    sssTable.put(13250.0, 585.00);
-    sssTable.put(13750.0, 607.50);
-    sssTable.put(14250.0, 630.00);
-    sssTable.put(14750.0, 652.50);
-    sssTable.put(15250.0, 675.00);
-    sssTable.put(15750.0, 697.50);
-    sssTable.put(16250.0, 720.00);
-    sssTable.put(16750.0, 742.50);
-    sssTable.put(17250.0, 765.00);
-    sssTable.put(17750.0, 787.50);
-    sssTable.put(18250.0, 810.00);
-    sssTable.put(18750.0, 832.50);
-    sssTable.put(19250.0, 855.00);
-    sssTable.put(19750.0, 877.50);
-    sssTable.put(20250.0, 900.00);
-    sssTable.put(24750.0, 1125.00);
-    // Fix: Check if floorEntry() is null
-    Map.Entry<Double, Double> entry = sssTable.floorEntry(grossIncome);
-    if (entry == null) {
-        return 0.00;  // Return 0 if no valid SSS bracket found
+    /**
+     * Calculates the SSS contribution based on gross income.
+     * 
+     * @param grossIncome The employee's gross income
+     * @return The SSS contribution amount
+     */
+    public static float calculateSSS(float grossIncome) {
+        // SSS CONTRIBUTION (Jan 2024 Table)
+        NavigableMap<Float, Float> sssTable = new TreeMap<>();
+        sssTable.put(3250f, 135.00f);
+        sssTable.put(3750f, 157.50f);
+        sssTable.put(4250f, 180.00f);
+        sssTable.put(4750f, 202.50f);
+        sssTable.put(5250f, 225.00f);
+        sssTable.put(5750f, 247.50f);
+        sssTable.put(6250f, 270.00f);
+        sssTable.put(6750f, 292.50f);
+        sssTable.put(7250f, 315.00f);
+        sssTable.put(7750f, 337.50f);
+        sssTable.put(8250f, 360.00f);
+        sssTable.put(8750f, 382.50f);
+        sssTable.put(9250f, 405.00f);
+        sssTable.put(9750f, 427.50f);
+        sssTable.put(10250f, 450.00f);
+        sssTable.put(10750f, 472.50f);
+        sssTable.put(11250f, 495.00f);
+        sssTable.put(11750f, 517.50f);
+        sssTable.put(12250f, 540.00f);
+        sssTable.put(12750f, 562.50f);
+        sssTable.put(13250f, 585.00f);
+        sssTable.put(13750f, 607.50f);
+        sssTable.put(14250f, 630.00f);
+        sssTable.put(14750f, 652.50f);
+        sssTable.put(15250f, 675.00f);
+        sssTable.put(15750f, 697.50f);
+        sssTable.put(16250f, 720.00f);
+        sssTable.put(16750f, 742.50f);
+        sssTable.put(17250f, 765.00f);
+        sssTable.put(17750f, 787.50f);
+        sssTable.put(18250f, 810.00f);
+        sssTable.put(18750f, 832.50f);
+        sssTable.put(19250f, 855.00f);
+        sssTable.put(19750f, 877.50f);
+        sssTable.put(20250f, 900.00f);
+        sssTable.put(24750f, 1125.00f);
+
+        // Get the nearest lower or equal salary bracket
+        Map.Entry<Float, Float> entry = sssTable.floorEntry(grossIncome);
+        if (entry == null) {
+            return 0.00f; // Return 0 if no valid SSS bracket is found
+        }
+
+        return entry.getValue();
     }
 
-    return entry.getValue();
- }
-
-    public static double calculatePhilHealth(double grossIncome) {
+    /**
+     * Calculates the PhilHealth contribution.
+     * 
+     * @param grossIncome The employee's gross income
+     * @return The weekly PhilHealth contribution (employee share)
+     */
+    public static float calculatePhilHealth(float grossIncome) {
         // PHILHEALTH CONTRIBUTION (Deducted Monthly)
-        double monthlyPhilHealth = (grossIncome <= 10000) ? 300 : Math.min(1800, 0.03 * grossIncome);
-        return (monthlyPhilHealth / 2) / 4; // Employee share divided by 4 for weekly deduction
+        float monthlyPhilHealth = (grossIncome <= 10000) ? 300f : Math.min(1800f, 0.03f * grossIncome);
+        return (monthlyPhilHealth / 4); // Employee share divided by 4 for weekly deduction
     }
 
-    public static double calculatePagibig(double grossIncome) {
+    /**
+     * Calculates the Pag-IBIG contribution.
+     * 
+     * @param grossIncome The employee's gross income
+     * @return The weekly Pag-IBIG contribution
+     */
+    public static float calculatePagibig(float grossIncome) {
         // PAG-IBIG CONTRIBUTION (Pro-rated Weekly)
-        double monthlyHDMF = (grossIncome <= 1500) ? Math.min(100, 0.01 * grossIncome) : Math.min(100, 0.02 * grossIncome);
+        float monthlyHDMF = (grossIncome <= 1500) ? Math.min(100f, 0.01f * grossIncome) : Math.min(100f, 0.02f * grossIncome);
         return monthlyHDMF / 4;
     }
 
-    public static double calculateBIR(double taxableIncome) {
+    /**
+     * Calculates the BIR withholding tax based on taxable income.
+     * 
+     * @param taxableIncome The employee's taxable income
+     * @return The BIR tax amount
+     */
+    public static float calculateBIR(float taxableIncome) {
         // BIR WITHHOLDING TAX (DOLE Rates)
         if (taxableIncome > 20832 && taxableIncome < 33333) {
-            return 0.20 * (taxableIncome - 20833);
+            return 0.20f * (taxableIncome - 20833);
         } else if (taxableIncome >= 33333 && taxableIncome < 66667) {
-            return 2500 + 0.25 * (taxableIncome - 33333);
+            return 2500f + 0.25f * (taxableIncome - 33333);
         } else if (taxableIncome >= 66667 && taxableIncome < 166667) {
-            return 10833 + 0.30 * (taxableIncome - 66667);
+            return 10833f + 0.30f * (taxableIncome - 66667);
         } else if (taxableIncome >= 166667 && taxableIncome < 666667) {
-            return 40833.33 + 0.32 * (taxableIncome - 166667);
+            return 40833.33f + 0.32f * (taxableIncome - 166667);
         } else if (taxableIncome >= 666667) {
-            return 200833.33 + 0.35 * (taxableIncome - 666667);
+            return 200833.33f + 0.35f * (taxableIncome - 666667);
         }
-        return 0;
+        return 0f;
     }
 }

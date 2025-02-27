@@ -1,76 +1,78 @@
-// Main - Final Calculation of Payroll
 package com.payroll;
 
 import java.util.*;
 
+/**
+ * MotorPHPayrollG3 - Main payroll processing system.
+ * Computes weekly salaries, government deductions, and de minimis benefits.
+ */
 public class MotorPHPayrollG3 {
     public static void main(String[] args) {
         System.out.println("Starting Payroll System...");
 
-        //Load Employee Data
+        // Load Employee Data
         Map<String, EmployeeData> employees = EmployeeData.loadEmployeeData("src/com/payroll/EmployeeData.csv");
         if (employees.isEmpty()) {
             System.err.println("No employees loaded. Exiting...");
             return;
         }
 
-        //Load De Minimis Benefits from EmployeeData.csv
+        // Load De Minimis Benefits
         Map<String, DeMinimisBenefits> benefits = DeMinimisBenefits.loadBenefits("src/com/payroll/EmployeeData.csv");
 
-        //Load Time Entries
+        // Load Time Entries
         List<TimeEntry> timeEntries = TimeEntry.loadTimeEntries("src/com/payroll/EmployeeTimeEntries.csv");
         if (timeEntries.isEmpty()) {
             System.err.println("No time entries loaded. Exiting...");
             return;
         }
 
-        //Calculate Weekly Worked Hours
+        // Calculate Weekly Worked Hours
         Map<String, WeeklySummary> weeklySummaries = WeeklySummary.calculateWorkedHours(employees, timeEntries);
 
-        //Loop through each employee and compute payroll
+        // Process payroll for each employee
         for (Map.Entry<String, WeeklySummary> entry : weeklySummaries.entrySet()) {
             String weeklyKey = entry.getKey();
             WeeklySummary summary = entry.getValue();
             EmployeeData employee = summary.getEmployee();
 
-            //Compute De Minimis Benefits directly
-            double weeklyRiceSubsidy = benefits.getOrDefault(employee.getEmpId(), new DeMinimisBenefits(employee.getEmpId(), 0, 0, 0)).getRiceSubsidy() / 4;
-            double weeklyPhoneAllowance = benefits.getOrDefault(employee.getEmpId(), new DeMinimisBenefits(employee.getEmpId(), 0, 0, 0)).getPhoneAllowance() / 4;
-            double weeklyClothingAllowance = benefits.getOrDefault(employee.getEmpId(), new DeMinimisBenefits(employee.getEmpId(), 0, 0, 0)).getClothingAllowance() / 4;
-            double totalDeMinimisBenefits = weeklyRiceSubsidy + weeklyPhoneAllowance + weeklyClothingAllowance;
+            // Compute De Minimis Benefits
+            float weeklyRiceSubsidy = benefits.getOrDefault(employee.getEmpId(), new DeMinimisBenefits(employee.getEmpId(), 0f, 0f, 0f)).getRiceSubsidy() / 4;
+            float weeklyPhoneAllowance = benefits.getOrDefault(employee.getEmpId(), new DeMinimisBenefits(employee.getEmpId(), 0f, 0f, 0f)).getPhoneAllowance() / 4;
+            float weeklyClothingAllowance = benefits.getOrDefault(employee.getEmpId(), new DeMinimisBenefits(employee.getEmpId(), 0f, 0f, 0f)).getClothingAllowance() / 4;
+            float totalDeMinimisBenefits = weeklyRiceSubsidy + weeklyPhoneAllowance + weeklyClothingAllowance;
 
-            //Step 1: Compute Weekly Salary (Before Deductions)
-            double regularPay = summary.getTotalWorkHours() * employee.getHourlyRate();
-            double overtimePay = summary.getTotalOvertime() * employee.getHourlyRate() * 1.25;
-            double holidayPay = summary.getTotalHolidayPay();
-            double restDayOvertimePay = summary.getTotalRestDayOTPay();
+            // Step 1: Compute Weekly Salary (Before Deductions)
+            float regularPay = summary.getTotalWorkHours() * employee.getHourlyRate();
+            float overtimePay = summary.getTotalOvertime() * employee.getHourlyRate() * 1.25f;
+            float holidayPay = summary.getTotalHolidayPay();
+            float restDayOvertimePay = summary.getTotalRestDayOTPay();
+            float grossIncome = regularPay + overtimePay + holidayPay + restDayOvertimePay;
 
-            double grossIncome = regularPay + overtimePay + holidayPay + restDayOvertimePay; //Gross Pay BEFORE tax
+            // Step 2: Compute Government Deductions
+            float govtSSS = GovernmentDeductions.calculateSSS(grossIncome);
+            float govtPhilHealth = GovernmentDeductions.calculatePhilHealth(grossIncome);
+            float govtHDMF = GovernmentDeductions.calculatePagibig(grossIncome);
 
-            //Step 2: Compute Government Deductions
-            double govtSSS = GovernmentDeductions.calculateSSS(grossIncome);
-            double govtPhilHealth = GovernmentDeductions.calculatePhilHealth(grossIncome);
-            double govtHDMF = GovernmentDeductions.calculatePagibig(grossIncome);
+            // Step 3: Calculate Taxable Income (Gross - Deductions)
+            float taxableIncome = grossIncome - (govtSSS + govtPhilHealth + govtHDMF);
 
-            //Step 3: Calculate Taxable Income (Gross - SSS - PhilHealth - Pag-Ibig)
-            double taxableIncome = grossIncome - (govtSSS + govtPhilHealth + govtHDMF);
+            // Step 4: Compute BIR Tax
+            float govtBirTax = GovernmentDeductions.calculateBIR(taxableIncome);
 
-            //Step 4: Compute BIR Tax
-            double govtBirTax = GovernmentDeductions.calculateBIR(taxableIncome);
+            // Step 5: Compute Net Pay (After Tax, Add De Minimis Benefits)
+            float totalDeductions = govtSSS + govtHDMF + govtPhilHealth + govtBirTax + summary.getTotalLateDeductions();
+            float netPay = (grossIncome - totalDeductions) + totalDeMinimisBenefits;
 
-            //Step 5: Compute Net Pay (After Tax, Add De Minimis Benefits)
-            double totalDeductions = govtSSS + govtHDMF + govtPhilHealth + govtBirTax + summary.getTotalLateDeductions();
-            double netPay = (grossIncome - totalDeductions) + totalDeMinimisBenefits;  //Add De Minimis AFTER tax
-
-            //Final Payroll Report
+            // Final Payroll Report
             System.out.println("--------------------------------------------------------------");
             System.out.println("---------------- FINAL PAYROLL REPORT (WEEKLY) ----------------");
             System.out.printf(" Employee ID: %s | Name: %s | DOB: %s%n", 
                 employee.getEmpId(), employee.getName(), employee.getDob());
-            // Include Hourly Rate, Status, and Position
             System.out.printf(" Hourly Rate: PHP %.2f | Status: %s | Position: %s%n", 
-            employee.getHourlyRate(), employee.getStatus(), employee.getPosition());
-            //Extract and Display Week Number
+                employee.getHourlyRate(), employee.getStatus(), employee.getPosition());
+
+            // Extract and Display Week Number
             String[] keyParts = weeklyKey.split("-");
             String weekNumber = (keyParts.length > 1) ? keyParts[1] : "Unknown";
             System.out.printf(" Week Number: %s%n", weekNumber);
@@ -96,4 +98,3 @@ public class MotorPHPayrollG3 {
         }
     }
 }
-

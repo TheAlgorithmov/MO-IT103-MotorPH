@@ -1,4 +1,3 @@
-// Subclass - EmployeeTimeEntries CSV Parser
 package com.payroll;
 
 import java.io.*;
@@ -6,6 +5,10 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+/**
+ * TimeEntry - Parses and processes employee time entries from a CSV file.
+ * Determines worked hours, holiday pay, and overtime conditions.
+ */
 public class TimeEntry {
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("M/d/yyyy h:mm a");
 
@@ -16,37 +19,32 @@ public class TimeEntry {
     private final boolean isSpecialNonWorking;
     private final boolean isRestDay;
     private final boolean isHolidayRestDay;
-    private final double holidayMultiplier;
-    private final double hoursWorked;
+    private final float holidayMultiplier;
+    private final float hoursWorked;
 
     // **Regular Philippine Holidays (200% pay)**
     private static final Set<LocalDate> REGULAR_HOLIDAYS = Set.of(
-        LocalDate.of(2024, 1, 1),   // New Year's Day
-        LocalDate.of(2024, 3, 28),  // Maundy Thursday
-        LocalDate.of(2024, 3, 29),  // Good Friday
-        LocalDate.of(2024, 4, 9),   // Day of Valor
-        LocalDate.of(2024, 5, 1),   // Labor Day
-        LocalDate.of(2024, 6, 12),  // Independence Day
-        LocalDate.of(2024, 8, 26),  // National Heroes Day
-        LocalDate.of(2024, 11, 30), // Bonifacio Day
-        LocalDate.of(2024, 12, 25), // Christmas Day
-        LocalDate.of(2024, 12, 30), // Rizal Day
-        LocalDate.of(2024, 4, 10),  // Eidul Fitr
-        LocalDate.of(2024, 6, 17)   // Eidul Adha
+        LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 28), LocalDate.of(2024, 3, 29),
+        LocalDate.of(2024, 4, 9), LocalDate.of(2024, 5, 1), LocalDate.of(2024, 6, 12),
+        LocalDate.of(2024, 8, 26), LocalDate.of(2024, 11, 30), LocalDate.of(2024, 12, 25),
+        LocalDate.of(2024, 12, 30), LocalDate.of(2024, 4, 10), LocalDate.of(2024, 6, 17)
     );
 
     // **Special Non-Working Holidays (130% pay)**
     private static final Set<LocalDate> SPECIAL_HOLIDAYS = Set.of(
-        LocalDate.of(2024, 2, 10),  // Chinese New Year
-        LocalDate.of(2024, 3, 30),  // Black Saturday
-        LocalDate.of(2024, 8, 21),  // Ninoy Aquino Day
-        LocalDate.of(2024, 11, 1),  // All Saints' Day
-        LocalDate.of(2024, 11, 2),  // All Souls' Day
-        LocalDate.of(2024, 12, 8),  // Feast of the Immaculate Conception
-        LocalDate.of(2024, 12, 24), // Christmas Eve
-        LocalDate.of(2024, 12, 31)  // Last Day of the Year
+        LocalDate.of(2024, 2, 10), LocalDate.of(2024, 3, 30), LocalDate.of(2024, 8, 21),
+        LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 2), LocalDate.of(2024, 12, 8),
+        LocalDate.of(2024, 12, 24), LocalDate.of(2024, 12, 31)
     );
 
+    /**
+     * Constructor to initialize a time entry.
+     * 
+     * @param empId        Employee ID
+     * @param clockIn      Clock-in time
+     * @param clockOut     Clock-out time
+     * @param hasOvertime  Indicates if overtime was worked
+     */
     public TimeEntry(String empId, LocalDateTime clockIn, LocalDateTime clockOut, boolean hasOvertime) {
         this.empId = empId;
         this.clockIn = clockIn;
@@ -62,18 +60,26 @@ public class TimeEntry {
         this.hoursWorked = calculateWorkHours();
     }
 
-    // **Determine the pay multiplier based on the type of day**
-    private double calculateHolidayMultiplier() {
-        if (isHolidayRestDay) return 2.6;  // Holiday + Rest Day OT (260% pay)
-        if (isRegularHoliday) return 2.00;  // Regular Holiday (200% pay)
-        if (isSpecialNonWorking) return 1.30;  // Special Non-Working Holiday (130% pay)
-        if (isRestDay) return 1.50;  // Rest Day OT (150% pay)
-        return 1.00;  // Normal workday (100% pay)
+    /**
+     * Determines the pay multiplier based on the type of day.
+     * 
+     * @return Pay multiplier for the workday
+     */
+    private float calculateHolidayMultiplier() {
+        if (isHolidayRestDay) return 2.6f;  // Holiday + Rest Day OT (260% pay)
+        if (isRegularHoliday) return 2.00f; // Regular Holiday (200% pay)
+        if (isSpecialNonWorking) return 1.30f; // Special Non-Working Holiday (130% pay)
+        if (isRestDay) return 1.50f; // Rest Day OT (150% pay)
+        return 1.00f; // Normal workday (100% pay)
     }
 
-    // **Calculate total worked hours for the day**
-    private double calculateWorkHours() {
-        return Duration.between(clockIn, clockOut).toMinutes() / 60.0;
+    /**
+     * Calculates total worked hours for the day.
+     * 
+     * @return Total worked hours as a float
+     */
+    private float calculateWorkHours() {
+        return (float) Duration.between(clockIn, clockOut).toMinutes() / 60;
     }
 
     // **Getter Methods**
@@ -84,10 +90,15 @@ public class TimeEntry {
     public boolean isSpecialNonWorking() { return isSpecialNonWorking; }
     public boolean isRestDay() { return isRestDay; }
     public boolean isHolidayRestDay() { return isHolidayRestDay; }
-    public double getHolidayMultiplier() { return holidayMultiplier; }
-    public double getHoursWorked() { return hoursWorked; }
+    public float getHolidayMultiplier() { return holidayMultiplier; }
+    public float getHoursWorked() { return hoursWorked; }
 
-    // `loadTimeEntries()` method**
+    /**
+     * Loads employee time entries from a CSV file.
+     * 
+     * @param filename Path to the time entries CSV file
+     * @return List of TimeEntry objects
+     */
     public static List<TimeEntry> loadTimeEntries(String filename) {
         List<TimeEntry> timeEntries = new ArrayList<>();
         File file = new File(filename);
@@ -103,6 +114,7 @@ public class TimeEntry {
 
             while ((line = br.readLine()) != null) {
                 try {
+                    // Handle CSV format properly
                     String[] data = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
                     if (data.length < 5) continue;
 
