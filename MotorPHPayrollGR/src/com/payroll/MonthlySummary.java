@@ -1,38 +1,28 @@
 package com.payroll;
 
 import java.time.*;
-import java.time.temporal.WeekFields;
 import java.util.*;
 
 /**
- * WeeklySummary - Computes an employee's weekly work hours, overtime, and deductions.
+ * MonthlySummary - Computes an employee's monthly work hours, overtime, and deductions.
  */
-public class WeeklySummary {
+public class MonthlySummary {
     private final EmployeeData employee;
     private float totalWorkHours = 0f, totalOvertime = 0f, totalLateDeductions = 0f, totalOvertimePay = 0f;
     private float totalHolidayPay = 0f, totalRestDayOTPay = 0f, totalLateHours = 0f;
     private final StringBuilder breakdownOutput = new StringBuilder();
 
     /**
-     * Constructor to initialize weekly summary for an employee.
+     * Constructor to initialize monthly summary for an employee.
      * 
-     * @param employee The employee for whom the weekly summary is generated.
+     * @param employee The employee for whom the monthly summary is generated.
      */
-    public WeeklySummary(EmployeeData employee) {
+    public MonthlySummary(EmployeeData employee) {
         this.employee = employee;
     }
 
     /**
-     * Adds daily work details to the weekly summary.
-     * 
-     * @param date               Work date
-     * @param rawDailyWorkHours  Hours worked before deductions
-     * @param lateMinutes        Late minutes
-     * @param lateDeduction      Salary deduction due to lateness
-     * @param isHoliday          Whether the day is a holiday
-     * @param isRestDay          Whether the day is a scheduled rest day
-     * @param isHolidayRestDay   Whether the day is a holiday that falls on a rest day
-     * @param holidayMultiplier  Multiplier for holiday pay
+     * Adds daily work details to the monthly summary.
      */
     public void addDailyWork(LocalDate date, float rawDailyWorkHours, float lateMinutes, float lateDeduction,
                              boolean isHoliday, boolean isRestDay, boolean isHolidayRestDay, float holidayMultiplier) {
@@ -85,13 +75,11 @@ public class WeeklySummary {
     public EmployeeData getEmployee() { return employee; }
 
     /**
-     * Generates a summary report for the employee's weekly worked hours.
-     * 
-     * @return A formatted string containing the work summary
+     * Generates a summary report for the employee's monthly worked hours.
      */
     public String getSummaryReport() {
         return "\n--------------------------------------------------------------\n"
-            + " Summary of Work Hours & Deductions \n"
+            + " Summary of Monthly Work Hours & Deductions \n"
             + "--------------------------------------------------------------\n"
             + String.format(" Total Worked Hours: %.2f%n", totalWorkHours)
             + String.format(" Total Overtime Hours: %.2f%n", totalOvertime)
@@ -106,8 +94,6 @@ public class WeeklySummary {
 
     /**
      * Generates a breakdown report of daily work logs.
-     * 
-     * @return A formatted breakdown of work hours and deductions
      */
     public String getBreakdownReport() {
         if (breakdownOutput.length() == 0) {
@@ -124,28 +110,24 @@ public class WeeklySummary {
     }
 
     /**
-     * Computes weekly worked hours for each employee from time entries.
-     * 
-     * @param employees    A map of employee data
-     * @param timeEntries  A list of employee time entries
-     * @return A map of weekly summaries for each employee
+     * Computes monthly worked hours for each employee from time entries.
      */
-    public static Map<String, WeeklySummary> calculateWorkedHours(
+    public static Map<String, MonthlySummary> calculateWorkedHours(
         Map<String, EmployeeData> employees, 
         List<TimeEntry> timeEntries) {  
 
-        Map<String, WeeklySummary> weeklySummaries = new HashMap<>();
+        Map<String, MonthlySummary> monthlySummaries = new HashMap<>();
 
         for (TimeEntry entry : timeEntries) {
             EmployeeData emp = employees.get(entry.getEmpId());
             if (emp == null) continue;
 
-            int weekOfYear = entry.getClockIn().get(WeekFields.of(Locale.getDefault()).weekOfYear());
-            String weeklyKey = entry.getEmpId() + "-" + weekOfYear;  // Unique key per employee per week
+            YearMonth yearMonth = YearMonth.from(entry.getClockIn().toLocalDate());
+            String monthlyKey = entry.getEmpId() + "-" + yearMonth;  // Unique key per employee per month
 
-            // Ensure we track weekly hours for each employee per week
-            weeklySummaries.putIfAbsent(weeklyKey, new WeeklySummary(emp));
-            WeeklySummary summary = weeklySummaries.get(weeklyKey);
+            // Ensure we track monthly hours for each employee
+            monthlySummaries.putIfAbsent(monthlyKey, new MonthlySummary(emp));
+            MonthlySummary summary = monthlySummaries.get(monthlyKey);
 
             float dailyWorkHours = entry.getHoursWorked();
             float rawDailyWorkHours = Math.max(0f, dailyWorkHours);
@@ -163,6 +145,6 @@ public class WeeklySummary {
                                  isHoliday, isRestDay, isHolidayRestDay, holidayMultiplier);
         }
 
-        return weeklySummaries;
+        return monthlySummaries;
     }
 }

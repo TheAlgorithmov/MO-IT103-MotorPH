@@ -5,14 +5,16 @@ import java.util.*;
 
 /**
  * EmployeeData - Parses and loads employee data from a CSV file.
+ * Now includes **Basic Salary** from EmployeeData.csv (Column K).
  */
 public class EmployeeData {
-    private final String empId;   // Employee ID
-    private final String name;    // Full name (First + Last)
-    private final String dob;     // Date of Birth
+    private final String empId;    // Employee ID
+    private final String name;     // Full name (First + Last)
+    private final String dob;      // Date of Birth
     private final float hourlyRate; // Hourly rate of the employee
-    private String status;        // Employment status (e.g., Full-time, Part-time)
-    private String position;      // Job position/title
+    private final float basicSalary; // Basic Salary from Column K
+    private String status;         // Employment status (e.g., Full-time, Part-time)
+    private String position;       // Job position/title
 
     /**
      * Constructor to initialize employee data.
@@ -21,77 +23,50 @@ public class EmployeeData {
      * @param name        Employee's full name
      * @param dob         Date of Birth
      * @param hourlyRate  Hourly pay rate
+     * @param basicSalary Employee's fixed basic salary
      * @param status      Employment status
      * @param position    Employee position/title
      */
-    public EmployeeData(String empId, String name, String dob, float hourlyRate, String status, String position) {
+    public EmployeeData(String empId, String name, String dob, float hourlyRate, float basicSalary, String status, String position) {
         this.empId = empId;
         this.name = name;
         this.dob = dob;
         this.hourlyRate = hourlyRate;
+        this.basicSalary = basicSalary;
         this.status = status;
         this.position = position;
     }
 
-    /**
-     * Retrieves the Employee ID.
-     * 
-     * @return Employee ID as a String
-     */
-    public String getEmpId() { 
-        return empId; 
+    // ** Getter for Basic Salary **
+    public float getBasicSalary() { 
+        return basicSalary; 
     }
 
-    /**
-     * Retrieves the employee's full name.
-     * 
-     * @return Full name as a String
-     */
-    public String getName() { 
-        return name; 
-    }
-
-    /**
-     * Retrieves the employee's date of birth.
-     * 
-     * @return Date of birth as a String
-     */
-    public String getDob() { 
-        return dob; 
-    }
-
-    /**
-     * Retrieves the hourly rate of the employee.
-     * 
-     * @return Hourly rate as a float
-     */
-    public float getHourlyRate() { 
-        return hourlyRate; 
-    }
-
-    /**
-     * Retrieves the employment status of the employee.
-     * 
-     * @return Employment status as a String
-     */
-    public String getStatus() { 
-        return status; 
-    }
-
-    /**
-     * Retrieves the employee's job position/title.
-     * 
-     * @return Position as a String
-     */
-    public String getPosition() { 
-        return position; 
-    }
+    public String getEmpId() { return empId; }
+    public String getName() { return name; }
+    public String getDob() { return dob; }
+    public float getHourlyRate() { return hourlyRate; }
+    public String getStatus() { return status; }
+    public String getPosition() { return position; }
 
     /**
      * Loads employee data from a CSV file and stores it in a HashMap.
+     * 
+     * **Updated to read Basic Salary from Column K (Index 10).**
      *
-     * @param filePath The path to the EmployeeData.csv file
-     * @return A map with Employee ID as the key and EmployeeData object as the value
+     * Expected CSV Format (Columns):
+     * 1. Employee ID
+     * 2. First Name
+     * 3. Last Name
+     * 4. Date of Birth
+     * 5. Hourly Rate
+     * 6-7. (Unused columns)
+     * 8. Employment Status
+     * 9. Job Position
+     * 10. Basic Salary  ← **Now included**
+     *
+     * @param filePath The path to EmployeeData.csv
+     * @return A HashMap with Employee ID as the key and EmployeeData objects as the value
      */
     public static Map<String, EmployeeData> loadEmployeeData(String filePath) {
         Map<String, EmployeeData> employees = new HashMap<>();
@@ -106,19 +81,20 @@ public class EmployeeData {
                     continue;
                 }
 
-                String[] data = line.split(","); // ✅ Ensure proper CSV delimiter
+                String[] data = line.split(","); // Ensure proper CSV delimiter
 
-                // Ensure there are at least 10 columns before processing
-                if (data.length >= 10) {  
+                // Ensure there are at least 11 columns before processing (Column K is index 10)
+                if (data.length >= 11) {  
                     String empId = data[0].trim();
-                    String name = data[1].trim() + " " + data[2].trim();  // Combine First Name + Last Name
+                    String name = data[1].trim() + " " + data[2].trim(); // Combine First Name + Last Name
                     String dob = data[3].trim();
                     float hourlyRate = parseFloat(data[4]); // Convert to float
                     String status = data[8].trim();
                     String position = data[9].trim();
+                    float basicSalary = parseFloat(data[10]); // Read Basic Salary from Column K
 
                     // Store the employee data in the map
-                    employees.put(empId, new EmployeeData(empId, name, dob, hourlyRate, status, position));
+                    employees.put(empId, new EmployeeData(empId, name, dob, hourlyRate, basicSalary, status, position));
                 }
             }
         } catch (IOException e) {
