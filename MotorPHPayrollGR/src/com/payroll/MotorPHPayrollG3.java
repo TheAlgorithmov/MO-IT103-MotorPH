@@ -2,6 +2,7 @@ package com.payroll;
 
 import java.util.*;
 import java.time.*;
+import java.util.Scanner;
 
 /**
  * MotorPHPayrollG3 - Main payroll processing system.
@@ -21,7 +22,9 @@ public class MotorPHPayrollG3 {
      */
     public static void main(String[] args) {
         System.out.println("Starting Payroll System...");
-
+        Scanner scanner = new Scanner(System.in); 
+        
+        
         // Load Employee Data
         Map<String, EmployeeData> employees = EmployeeData.loadEmployeeData("src/com/payroll/EmployeeData.csv");
         if (employees.isEmpty()) {
@@ -42,12 +45,22 @@ public class MotorPHPayrollG3 {
         // Calculate Monthly Worked Hours
         Map<String, MonthlySummary> monthlySummaries = MonthlySummary.calculateWorkedHours(employees, timeEntries);
 
+        // Scanner will ask for the Employee ID - user input
+        System.out.print("Enter the 5-digit Employee ID to generate the compensation details: ");
+        String inputEmpId = scanner.nextLine().trim();
+        
+        // Scanner checks if Employee ID exists
+        boolean employeeFound = false;
+        
         // Process payroll for each employee
         for (Map.Entry<String, MonthlySummary> entry : monthlySummaries.entrySet()) {
             String monthlyKey = entry.getKey();
             MonthlySummary summary = entry.getValue();
             EmployeeData employee = summary.getEmployee();
 
+            if (employee.getEmpId().equals(inputEmpId)) { // Scanner will get the employee ID details
+                employeeFound = true;
+                
             // Compute De Minimis Benefits (Monthly)
             float riceSubsidy = benefits.getOrDefault(employee.getEmpId(), new DeMinimisBenefits(employee.getEmpId(), 0f, 0f, 0f)).getRiceSubsidy();
             float phoneAllowance = benefits.getOrDefault(employee.getEmpId(), new DeMinimisBenefits(employee.getEmpId(), 0f, 0f, 0f)).getPhoneAllowance();
@@ -111,4 +124,11 @@ public class MotorPHPayrollG3 {
             System.out.println(summary.getSummaryReport());
         }
     }
+            // Scanner output for invalid employee ID
+        if (!employeeFound) {
+            System.out.println("No payroll data found for Employee ID: " + inputEmpId);
+        }
+        
+        scanner.close(); //
+}
 }
