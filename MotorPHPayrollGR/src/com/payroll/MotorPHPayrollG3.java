@@ -2,7 +2,6 @@ package com.payroll;
 
 import java.util.*;
 import java.time.*;
-import java.util.Scanner;
 
 /**
  * MotorPHPayrollG3 - Main payroll processing system.
@@ -10,27 +9,19 @@ import java.util.Scanner;
  */
 public class MotorPHPayrollG3 {
 
-    /**
-     * The main method serves as the entry point for the payroll processing system.
-     * It performs the following steps:
-     * 1. Loads employee data from a CSV file.
-     * 2. Loads de minimis benefits for employees.
-     * 3. Loads time entries for employees.
-     * 4. Computes monthly worked hours.
-     * 5. Calculates payroll details including gross income, government deductions, taxable income, and net pay.
-     * 6. Generates and prints the final payroll report for each employee.
-     */
     public static void main(String[] args) {
         System.out.println("Starting Payroll System...");
-        Scanner scanner = new Scanner(System.in); 
-        
-        
+        Scanner scanner = new Scanner(System.in);
+
         // Load Employee Data
         Map<String, EmployeeData> employees = EmployeeData.loadEmployeeData("src/com/payroll/EmployeeData.csv");
         if (employees.isEmpty()) {
             System.err.println("No employees loaded. Exiting...");
             return;
         }
+
+        // Load Holiday Calendar BEFORE anything else
+        HolidayCalendar.loadHolidaysFromCSV("src/com/payroll/HolidayCalendar.csv");
 
         // Load De Minimis Benefits
         Map<String, DeMinimisBenefits> benefits = DeMinimisBenefits.loadBenefits("src/com/payroll/EmployeeData.csv");
@@ -42,93 +33,158 @@ public class MotorPHPayrollG3 {
             return;
         }
 
-        // Calculate Monthly Worked Hours
-        Map<String, MonthlySummary> monthlySummaries = MonthlySummary.calculateWorkedHours(employees, timeEntries);
+        // Prompt user for start and end date
+        LocalDate startDate = null, endDate = null;
+        while (startDate == null || endDate == null || endDate.isBefore(startDate)) {
+            try {
+                System.out.print("Enter Start Date (YYYY-MM-DD): ");
+                startDate = LocalDate.parse(scanner.nextLine().trim());
 
-        // Scanner will ask for the Employee ID - user input
+                System.out.print("Enter End Date (YYYY-MM-DD): ");
+                endDate = LocalDate.parse(scanner.nextLine().trim());
+
+                if (endDate.isBefore(startDate)) {
+                    System.out.println("Error: End date cannot be before start date. Please try again.");
+                }
+            } catch (Exception e) {
+                System.out.println("Invalid date format. Please enter dates in YYYY-MM-DD format.");
+                startDate = null;
+                endDate = null;
+            }
+        }
+
+        // Filter time entries based on user input
+        List<TimeEntry> filteredTimeEntries = TimeEntry.filterTimeEntriesByDate(timeEntries, startDate, endDate);
+        if (filteredTimeEntries.isEmpty()) {
+            System.out.println("No time entries found within the specified period.");
+            return;
+        }
+
+        // Calculate Monthly Worked Hours only for the filtered entries
+        Map<String, MonthlySummary> monthlySummaries = MonthlySummary.calculateWorkedHours(employees, filteredTimeEntries);
+
+        // Prompt for Employee ID
         System.out.print("Enter the 5-digit Employee ID to generate the compensation details: ");
         String inputEmpId = scanner.nextLine().trim();
-        
-        // Scanner checks if Employee ID exists
+
         boolean employeeFound = false;
-        
-        // Process payroll for each employee
+
         for (Map.Entry<String, MonthlySummary> entry : monthlySummaries.entrySet()) {
-            String monthlyKey = entry.getKey();
             MonthlySummary summary = entry.getValue();
             EmployeeData employee = summary.getEmployee();
 
-            if (employee.getEmpId().equals(inputEmpId)) { // Scanner will get the employee ID details
+            if (employee.getEmpId().equals(inputEmpId)) {
                 employeeFound = true;
-                
-            // Compute De Minimis Benefits (Monthly)
-            float riceSubsidy = benefits.getOrDefault(employee.getEmpId(), new DeMinimisBenefits(employee.getEmpId(), 0f, 0f, 0f)).getRiceSubsidy();
-            float phoneAllowance = benefits.getOrDefault(employee.getEmpId(), new DeMinimisBenefits(employee.getEmpId(), 0f, 0f, 0f)).getPhoneAllowance();
-            float clothingAllowance = benefits.getOrDefault(employee.getEmpId(), new DeMinimisBenefits(employee.getEmpId(), 0f, 0f, 0f)).getClothingAllowance();
-            float totalDeMinimisBenefits = riceSubsidy + phoneAllowance + clothingAllowance;
-
-            // Step 1: Compute Monthly Salary (Before Deductions)
-            float regularPay = summary.getTotalWorkHours() * employee.getHourlyRate();
-            float overtimePay = summary.getTotalOvertime() * employee.getHourlyRate() * 1.25f;
-            float holidayPay = summary.getTotalHolidayPay();
-            float restDayOvertimePay = summary.getTotalRestDayOTPay();
-            float grossIncome = regularPay + overtimePay + holidayPay + restDayOvertimePay;
-
-            // Step 2: Compute Government Deductions
-            float basicSalary = employee.getBasicSalary(); // Get Basic Salary from EmployeeData.csv
-            float govtSSS = GovernmentDeductions.calculateSSS(basicSalary);
-
-            float govtPhilHealth = GovernmentDeductions.calculatePhilHealth(grossIncome);
-            float govtHDMF = GovernmentDeductions.calculatePagibig(grossIncome);
-
-            // Step 3: Calculate Taxable Income (Gross - Deductions)
-            float taxableIncome = grossIncome - (govtSSS + govtPhilHealth + govtHDMF);
-
-            // Step 4: Compute BIR Tax
-            float govtBirTax = GovernmentDeductions.calculateBIR(taxableIncome);
-
-            // Step 5: Compute Net Pay (After Tax, Add De Minimis Benefits)
-            float totalDeductions = govtSSS + govtHDMF + govtPhilHealth + govtBirTax + summary.getTotalLateDeductions();
-            float netPay = (grossIncome - totalDeductions) + totalDeMinimisBenefits;
-
-            // Final Payroll Report
-            System.out.println("--------------------------------------------------------------");
-            System.out.println("---------------- FINAL PAYROLL REPORT (MONTHLY) ----------------");
-            System.out.printf(" Employee ID: %s | Name: %s | DOB: %s%n", 
-                employee.getEmpId(), employee.getName(), employee.getDob());
-            System.out.printf(" Hourly Rate: PHP %.2f | Status: %s | Position: %s%n", 
-                employee.getHourlyRate(), employee.getStatus(), employee.getPosition());
-
-            // Extract and Display Month
-            String[] keyParts = monthlyKey.split("-");
-            String yearMonth = (keyParts.length > 1) ? keyParts[1] : "Unknown";
-            System.out.printf(" Payroll Period: %s%n", yearMonth);
-            System.out.println("--------------------------------------------------------------");
-            System.out.printf(" Worked Hours (Per Month): %.2f hours%n", summary.getTotalWorkHours());
-            System.out.printf(" Overtime Hours (Per Month): %.2f hours%n", summary.getTotalOvertime());
-            System.out.printf(" Gross Monthly Income (Before Tax): PHP %.2f%n", grossIncome);
-            System.out.printf(" Taxable Income (After SSS, PhilHealth, Pag-Ibig): PHP %.2f%n", taxableIncome);
-            System.out.printf(" Net Monthly Income (After Tax, with Benefits): PHP %.2f%n", netPay);
-            System.out.println("--------------------------------------------------------------");
-            System.out.println(" Government Deductions:");
-            System.out.printf(" SSS Contribution (Employee Share): PHP %.2f%n", govtSSS);
-            System.out.printf(" Pag-IBIG Contribution: PHP %.2f%n", govtHDMF);
-            System.out.printf(" PhilHealth Contribution: PHP %.2f%n", govtPhilHealth);
-            System.out.printf(" BIR Withholding Tax (Monthly): PHP %.2f%n", govtBirTax);
-            System.out.println("--------------------------------------------------------------");
-            System.out.println(" De Minimis Benefits:");
-            System.out.printf(" Monthly Rice Subsidy: PHP %.2f%n", riceSubsidy);
-            System.out.printf(" Monthly Phone Allowance: PHP %.2f%n", phoneAllowance);
-            System.out.printf(" Monthly Clothing Allowance: PHP %.2f%n", clothingAllowance);
-            System.out.println("--------------------------------------------------------------");
-            System.out.println(summary.getSummaryReport());
+                printPayrollReport(summary, employee, benefits, startDate, endDate);
+            }
         }
-    }
-            // Scanner output for invalid employee ID
+
         if (!employeeFound) {
             System.out.println("No payroll data found for Employee ID: " + inputEmpId);
         }
-        
-        scanner.close(); //
-}
+
+        scanner.close();
+    }
+
+    /**
+     * Prints the payroll report for an employee.
+     */
+    public static void printPayrollReport(MonthlySummary summary, EmployeeData employee,
+                                          Map<String, DeMinimisBenefits> benefits, LocalDate startDate, LocalDate endDate) {
+        // Compute De Minimis Benefits (Monthly)
+        float riceSubsidy = benefits.getOrDefault(employee.getEmpId(), new DeMinimisBenefits(employee.getEmpId(), 0f, 0f, 0f)).getRiceSubsidy();
+        float phoneAllowance = benefits.getOrDefault(employee.getEmpId(), new DeMinimisBenefits(employee.getEmpId(), 0f, 0f, 0f)).getPhoneAllowance();
+        float clothingAllowance = benefits.getOrDefault(employee.getEmpId(), new DeMinimisBenefits(employee.getEmpId(), 0f, 0f, 0f)).getClothingAllowance();
+        float totalDeMinimisBenefits = riceSubsidy + phoneAllowance + clothingAllowance;
+
+        // Compute Monthly Salary (Before Deductions)
+        float regularPay = summary.getTotalWorkHours() * employee.getHourlyRate();
+        float overtimePay = summary.getTotalOvertimePay();
+        float holidayPay = summary.getTotalHolidayPay();
+        float restDayOvertimePay = summary.getTotalRestDayOTPay();
+        float grossIncome = regularPay + overtimePay + holidayPay + restDayOvertimePay;
+
+        // Compute Government Deductions
+        float basicSalary = employee.getBasicSalary();
+        if (basicSalary <= 0f) {
+            System.out.println("[Warning] Missing or invalid Basic Salary. Using fallback estimate.");
+            basicSalary = employee.getHourlyRate() * 8 * 22;
+        }
+
+        float govtSSS = GovernmentDeductions.calculateSSS(basicSalary);
+        float govtPhilHealth = GovernmentDeductions.calculatePhilHealth(grossIncome);
+        float govtHDMF = GovernmentDeductions.calculatePagibig(grossIncome);
+
+        // Compute Taxable Income
+        float taxableIncome = grossIncome - (govtSSS + govtPhilHealth + govtHDMF);
+
+        // Compute BIR Tax
+        float govtBirTax = GovernmentDeductions.calculateBIR(taxableIncome);
+
+        // Compute Total Deductions and Net Pay
+        float totalGovtDeductions = govtSSS + govtHDMF + govtPhilHealth + govtBirTax;
+        float totalDeductions = totalGovtDeductions + summary.getTotalLateDeductions();
+        float netPay = (grossIncome - totalDeductions) + totalDeMinimisBenefits;
+
+        // Print Payroll Report
+        System.out.println("--------------------------------------------------------------");
+        System.out.println("---------------- FINAL PAYROLL REPORT (MONTHLY) ----------------");
+        System.out.printf(" Employee ID: %s | Name: %s | DOB: %s%n",
+                employee.getEmpId(), employee.getName(), employee.getDob());
+        System.out.printf(" Hourly Rate: PHP %,.2f | Status: %s | Position: %s%n",
+                employee.getHourlyRate(), employee.getStatus(), employee.getPosition());
+        System.out.printf(" Payroll Period: %s to %s%n", startDate, endDate);
+        System.out.println("--------------------------------------------------------------");
+        System.out.printf(" Worked Hours               : %.2f hours%n", summary.getTotalWorkHours());
+        System.out.printf(" Overtime Hours             : %.2f hours%n", summary.getTotalOvertime());
+        System.out.printf(" Gross Monthly Income       : PHP %,.2f%n", grossIncome);
+        System.out.printf(" Taxable Income (after SSS, PhilHealth, Pag-IBIG): PHP %,.2f%n", taxableIncome);
+        System.out.println("--------------------------------------------------------------");
+
+        // Deduction Section - Accounting Style
+        System.out.println(" Government Deductions:");
+        System.out.printf(" - SSS Contribution         : PHP (%,.2f)%n", govtSSS);
+        System.out.printf(" - Pag-IBIG Contribution    : PHP (%,.2f)%n", govtHDMF);
+        System.out.printf(" - PhilHealth Contribution  : PHP (%,.2f)%n", govtPhilHealth);
+        System.out.printf(" - BIR Withholding Tax      : PHP (%,.2f)%n", govtBirTax);
+        System.out.println("--------------------------------------------------------------");
+        System.out.printf(" Total Government Deductions: PHP (%,.2f)%n", totalGovtDeductions);
+        System.out.println("--------------------------------------------------------------");
+
+        // De Minimis Section
+        System.out.println(" De Minimis Benefits:");
+        System.out.printf(" Rice Subsidy              : PHP %,.2f%n", riceSubsidy);
+        System.out.printf(" Phone Allowance           : PHP %,.2f%n", phoneAllowance);
+        System.out.printf(" Clothing Allowance        : PHP %,.2f%n", clothingAllowance);
+        System.out.println("--------------------------------------------------------------");
+
+        System.out.printf(" Net Monthly Income (After Tax, with Benefits): PHP %,.2f%n", netPay);
+        System.out.println("--------------------------------------------------------------");
+
+        printSummaryReport(summary);
+    }
+
+    /**
+     * Prints the summary report for an employee.
+     */
+    public static void printSummaryReport(MonthlySummary summary) {
+        System.out.println("\n---------------- Monthly Work Hours & Deductions ----------------");
+        Map<String, Object> data = summary.getSummaryData();
+        System.out.printf(" Total Worked Hours      : %.2f%n", data.get("totalWorkHours"));
+        System.out.printf(" Regular Worked Hours    : %.2f%n", data.get("totalRegularWorkHours"));
+        System.out.printf(" Holiday Worked Hours    : %.2f%n", data.get("totalHolidayWorkHours"));
+        System.out.printf(" Overtime Pay            : PHP %,.2f%n", data.get("totalOvertimePay"));
+        System.out.printf(" Holiday Pay             : PHP %,.2f%n", data.get("totalHolidayPay"));
+        System.out.printf(" Rest Day OT Pay         : PHP %,.2f%n", data.get("totalRestDayOTPay"));
+        System.out.println("--------------------------------------------------------------");
+
+        printBreakdownReport(summary);
+    }
+
+    /**
+     * Prints the breakdown log of daily work and deductions.
+     */
+    public static void printBreakdownReport(MonthlySummary summary) {
+        System.out.println(summary.getBreakdownReport());
+    }
 }

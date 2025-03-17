@@ -8,21 +8,25 @@ import java.util.TreeMap;
  * GovernmentDeductions - Computes mandatory government deductions for employees.
  *
  * This class provides methods to calculate:
- * 1. **SSS (Social Security System)** - Based on a salary bracket system using Basic Salary.
- * 2. **PhilHealth (Health Insurance)** - 3% of the monthly salary, with a cap.
- * 3. **Pag-IBIG (Housing Fund)** - 1% or 2% depending on salary.
- * 4. **BIR (Income Tax)** - Based on progressive tax brackets.
+ * 1. SSS (Social Security System) - Based on salary bracket system using Basic Salary.
+ * 2. PhilHealth (Health Insurance) - 3% of monthly gross income, with cap.
+ * 3. Pag-IBIG (Housing Fund) - 1% or 2% depending on gross income.
+ * 4. BIR (Income Tax) - Based on progressive tax brackets.
  */
 public class GovernmentDeductions {
 
     /**
      * Calculates the SSS (Social Security System) contribution based on Basic Salary.
      *
-     * @param basicSalary The employee's Basic Salary (monthly, from EmployeeData.csv)
-     * @return The SSS contribution amount (monthly)
+     * Contribution is based on a predefined bracket system. If salary exceeds the highest tier,
+     * contribution is capped at the highest applicable value.
+     *
+     * @param basicSalary The employee's basic monthly salary (from EmployeeData)
+     * @return The monthly SSS contribution
      */
     public static float calculateSSS(float basicSalary) {
         NavigableMap<Float, Float> sssTable = new TreeMap<>();
+
         sssTable.put(3250f, 135.00f);
         sssTable.put(3750f, 157.50f);
         sssTable.put(4250f, 180.00f);
@@ -58,17 +62,20 @@ public class GovernmentDeductions {
         sssTable.put(19250f, 855.00f);
         sssTable.put(19750f, 877.50f);
         sssTable.put(20250f, 900.00f);
-        sssTable.put(24750f, 1125.00f);
+        sssTable.put(24750f, 1125.00f); // Maximum cap tier
 
         Map.Entry<Float, Float> entry = sssTable.floorEntry(basicSalary);
-        return (entry != null) ? entry.getValue() : 0.00f;
+
+        // Return closest lower/equal tier contribution or cap at max if salary exceeds table
+        return (entry != null) ? entry.getValue() : sssTable.lastEntry().getValue();
     }
 
     /**
      * Calculates the PhilHealth (health insurance) contribution based on gross income.
+     * Contribution rate is 3% of gross income, capped at PHP 1,800.
      *
-     * @param grossIncome The employee's gross income (monthly)
-     * @return The monthly PhilHealth contribution (employee share)
+     * @param grossIncome The employee's monthly gross income
+     * @return The monthly PhilHealth contribution (employee share only)
      */
     public static float calculatePhilHealth(float grossIncome) {
         return (grossIncome <= 10000) ? 300f : Math.min(1800f, 0.03f * grossIncome);
@@ -76,8 +83,10 @@ public class GovernmentDeductions {
 
     /**
      * Calculates the Pag-IBIG (housing fund) contribution based on gross income.
+     * Rate is 1% for income up to PHP 1,500 and 2% for income above PHP 1,500.
+     * Contribution is capped at PHP 100.
      *
-     * @param grossIncome The employee's gross income (monthly)
+     * @param grossIncome The employee's monthly gross income
      * @return The monthly Pag-IBIG contribution
      */
     public static float calculatePagibig(float grossIncome) {
@@ -86,22 +95,22 @@ public class GovernmentDeductions {
 
     /**
      * Calculates the BIR (Bureau of Internal Revenue) withholding tax.
+     * Uses progressive monthly tax brackets for individual employees.
      *
-     * Uses a **progressive tax system** for monthly taxable income:
-     *
-     * - **≤ PHP 20,832** → **0%** (No tax)
-     * - **PHP 20,833 - PHP 33,332** → **20%** of excess over PHP 20,833
-     * - **PHP 33,333 - PHP 66,666** → PHP 2,500 + **25%** of excess over PHP 33,333
-     * - **PHP 66,667 - PHP 166,666** → PHP 10,833 + **30%** of excess over PHP 66,667
-     * - **PHP 166,667 - PHP 666,666** → PHP 40,833.33 + **32%** of excess over PHP 166,667
-     * - **≥ PHP 666,667** → PHP 200,833.33 + **35%** of excess over PHP 666,667
+     * Tax Brackets:
+     *  - ≤ PHP 20,832                → 0%
+     *  - PHP 20,833 – 33,332         → 20% of excess over 20,833
+     *  - PHP 33,333 – 66,666         → PHP 2,500 + 25% of excess over 33,333
+     *  - PHP 66,667 – 166,666        → PHP 10,833 + 30% of excess over 66,667
+     *  - PHP 166,667 – 666,666       → PHP 40,833.33 + 32% of excess over 166,667
+     *  - ≥ PHP 666,667               → PHP 200,833.33 + 35% of excess over 666,667
      *
      * @param taxableIncome The employee's monthly taxable income (gross - deductions)
-     * @return The monthly BIR tax amount
+     * @return The monthly BIR withholding tax
      */
     public static float calculateBIR(float taxableIncome) {
         if (taxableIncome <= 20832) {
-            return 0f; // No tax for income ≤ 20,832
+            return 0f;
         } else if (taxableIncome <= 33332) {
             return 0.20f * (taxableIncome - 20833);
         } else if (taxableIncome <= 66666) {
