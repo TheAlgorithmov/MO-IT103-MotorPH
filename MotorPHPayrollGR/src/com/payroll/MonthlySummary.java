@@ -14,8 +14,6 @@ public class MonthlySummary {
 
     /**
      * Constructor to initialize monthly summary for an employee.
-     * 
-     * @param employee The employee for whom the monthly summary is generated.
      */
     public MonthlySummary(EmployeeData employee) {
         this.employee = employee;
@@ -25,15 +23,11 @@ public class MonthlySummary {
      * Adds daily work details to the monthly summary.
      */
     public void addDailyWork(LocalDate date, float rawDailyWorkHours, float lateMinutes, float lateDeduction,
-                             boolean isHoliday, boolean isRestDay, boolean isHolidayRestDay, float holidayMultiplier) {
-        // Convert late minutes to hours
+                         boolean isHoliday, boolean isRestDay, boolean isHolidayRestDay, float holidayMultiplier) {
         float lateHours = lateMinutes / 60f;
         totalLateHours += lateHours;
 
-        // Deduct 1-hour unpaid lunch from raw work hours
         float dailyWorkHours = Math.max(0f, rawDailyWorkHours - 1f);
-
-        // Regular work shift is 8 hours
         float regularWorkHours = Math.min(8f, dailyWorkHours);
         float overtimeHours = (dailyWorkHours >= 9f) ? dailyWorkHours - 8f : 0f;
 
@@ -41,59 +35,128 @@ public class MonthlySummary {
         totalOvertime += overtimeHours;
         totalLateDeductions += lateDeduction;
 
-        // Compute Holiday Pay (if applicable)
         float dailyHolidayPay = 0f;
         if (isHoliday) {
             dailyHolidayPay = dailyWorkHours * employee.getHourlyRate() * (holidayMultiplier - 1f);
             totalHolidayPay += dailyHolidayPay;
         }
 
-        // Compute Rest Day OT Pay (if applicable)
         float dailyRestDayOTPay = 0f;
         if (isRestDay) {
             dailyRestDayOTPay = dailyWorkHours * employee.getHourlyRate() * 1.5f;
             totalRestDayOTPay += dailyRestDayOTPay;
         }
 
-        // Compute Overtime Pay
         float overtimePay = overtimeHours * employee.getHourlyRate() * 1.25f;
         totalOvertimePay += overtimePay;
 
-        // Add breakdown log
+        // Determine the correct work type label for the breakdown report
+        String workTypeLabel;
+
+        if (isHolidayRestDay) {
+            // Case: Employee worked on both a holiday and their rest day
+            workTypeLabel = "Holiday + Rest Day";
+        } else if (isHoliday) {
+            // Case: Employee worked on a holiday (determine type by holiday multiplier)
+            if (holidayMultiplier == 2.00f) {
+                workTypeLabel = "Regular Holiday";
+            } else if (holidayMultiplier == 1.30f) {
+                workTypeLabel = "Special Holiday";
+            } else {
+                workTypeLabel = "Holiday"; // Fallback for any other special cases
+            }
+        } else if (isRestDay) {
+            // Case: Employee worked on their scheduled rest day
+            workTypeLabel = "Rest Day";
+        } else {
+            // Case: Regular working day
+            workTypeLabel = "Regular Workday";
+        }
+
+        // Append the breakdown log entry with aligned formatting
         breakdownOutput.append(String.format(" %s | %-17s | %8.2f | %.2f   | PHP %8.2f | %12.2f | PHP %8.2f%n",
-            date.toString(), (isHoliday ? "Holiday" : isRestDay ? "Rest Day" : "Regular Workday"),
-            overtimeHours, 1.25f, overtimePay, lateMinutes, lateDeduction));
+            date.toString(), workTypeLabel, overtimeHours, 1.25f, overtimePay, lateMinutes, lateDeduction));
     }
 
-    // ** Getters for Payroll Calculation **
+    /**
+     * Returns the total number of work hours (excluding lunch breaks) for the employee within the payroll period.
+     * @return Total worked hours as a float value.
+     */
     public float getTotalWorkHours() { return totalWorkHours; }
+
+    /**
+     * Returns the total number of overtime hours worked beyond the standard shift (8 hours/day).
+     * @return Total overtime hours as a float value.
+     */
     public float getTotalOvertime() { return totalOvertime; }
+
+    /**
+     * Returns the total amount of salary deductions due to employee lateness.
+     * @return Total late deductions in PHP.
+     */
     public float getTotalLateDeductions() { return totalLateDeductions; }
+
+    /**
+     * Returns the total monetary compensation received for overtime hours.
+     * @return Total overtime pay in PHP.
+     */
     public float getTotalOvertimePay() { return totalOvertimePay; }
+
+    /**
+     * Returns the total additional compensation received for working during holidays.
+     * @return Total holiday pay in PHP.
+     */
     public float getTotalHolidayPay() { return totalHolidayPay; }
+
+    /**
+     * Returns the total additional compensation received for working on rest days.
+     * @return Total rest day overtime pay in PHP.
+     */
     public float getTotalRestDayOTPay() { return totalRestDayOTPay; }
+
+    /**
+     * Returns the employee's personal and payroll-related data object.
+     * @return EmployeeData object containing employee ID, name, rate, and other attributes.
+     */
     public EmployeeData getEmployee() { return employee; }
 
     /**
-     * Generates a summary report for the employee's monthly worked hours.
+     * Returns summary data in key-value map for external use (e.g., payroll report).
+     */
+    public Map<String, Object> getSummaryData() {
+        Map<String, Object> data = new HashMap<>();
+        data.put("totalWorkHours", totalWorkHours);
+        data.put("totalRegularWorkHours", totalWorkHours); // Optional: refine if tracking regular separately
+        data.put("totalHolidayWorkHours", 0f); // Optional: currently not tracked independently
+        data.put("totalOvertime", totalOvertime);
+        data.put("totalOvertimePay", totalOvertimePay);
+        data.put("totalHolidayPay", totalHolidayPay);
+        data.put("totalRestDayOTPay", totalRestDayOTPay);
+        data.put("totalLateHours", totalLateHours);
+        data.put("totalLateDeductions", totalLateDeductions);
+        return data;
+    }
+
+    /**
+     * Generates a summary report of work hours and deductions.
      */
     public String getSummaryReport() {
         return "\n--------------------------------------------------------------\n"
             + " Summary of Monthly Work Hours & Deductions \n"
             + "--------------------------------------------------------------\n"
-            + String.format(" Total Worked Hours: %.2f%n", totalWorkHours)
-            + String.format(" Total Overtime Hours: %.2f%n", totalOvertime)
-            + String.format(" Total Overtime Pay: PHP %.2f%n", totalOvertimePay)
-            + String.format(" Total Holiday Pay: PHP %.2f%n", totalHolidayPay)
-            + String.format(" Total Rest Day OT Pay: PHP %.2f%n", totalRestDayOTPay)
-            + String.format(" Total Late Hours: %.2f%n", totalLateHours)
-            + String.format(" Total Late Deductions: PHP %.2f%n", totalLateDeductions)
+            + String.format(" Total Worked Hours      : %.2f%n", totalWorkHours)
+            + String.format(" Total Overtime Hours    : %.2f%n", totalOvertime)
+            + String.format(" Total Overtime Pay      : PHP %.2f%n", totalOvertimePay)
+            + String.format(" Total Holiday Pay       : PHP %.2f%n", totalHolidayPay)
+            + String.format(" Total Rest Day OT Pay   : PHP %.2f%n", totalRestDayOTPay)
+            + String.format(" Total Late Hours        : %.2f%n", totalLateHours)
+            + String.format(" Total Late Deductions   : PHP %.2f%n", totalLateDeductions)
             + "--------------------------------------------------------------\n"
             + getBreakdownReport();
     }
 
     /**
-     * Generates a breakdown report of daily work logs.
+     * Returns detailed daily breakdown of overtime and deductions.
      */
     public String getBreakdownReport() {
         if (breakdownOutput.length() == 0) {
@@ -110,11 +173,47 @@ public class MonthlySummary {
     }
 
     /**
-     * Computes monthly worked hours for each employee from time entries.
+     * Combines employee header, summary, and breakdown.
+     */
+    public String generateFullBreakdownReport() {
+        StringBuilder report = new StringBuilder();
+
+        report.append("========== Monthly Work Summary Report ==========\n");
+        report.append("Employee Name         : ").append(employee.getName()).append("\n");
+        report.append("Employee ID           : ").append(employee.getEmpId()).append("\n");
+        report.append("Hourly Rate           : PHP ").append(String.format("%.2f", employee.getHourlyRate())).append("\n");
+        report.append("--------------------------------------------------\n");
+        report.append(String.format("Total Work Hours      : %.2f\n", totalWorkHours));
+        report.append(String.format("Total Overtime Hours  : %.2f\n", totalOvertime));
+        report.append(String.format("Total Overtime Pay    : PHP %.2f\n", totalOvertimePay));
+        report.append(String.format("Total Holiday Pay     : PHP %.2f\n", totalHolidayPay));
+        report.append(String.format("Total Rest Day OT Pay : PHP %.2f\n", totalRestDayOTPay));
+        report.append(String.format("Total Late Hours      : %.2f\n", totalLateHours));
+        report.append(String.format("Late Deductions       : PHP %.2f\n", totalLateDeductions));
+        report.append("==================================================\n");
+
+        report.append(getBreakdownReport());
+        return report.toString();
+    }
+
+    /**
+     * Computes and aggregates monthly work summaries for all employees based on their time entries.
+     *
+     * This method performs the following steps:
+     *  - Iterates over all time entries within the specified date range.
+     *  - Groups entries by employee and calendar month (e.g., "EMP001-2024-06").
+     *  - Calculates daily work hours, late minutes, and corresponding late deductions.
+     *  - Determines workday classifications such as Regular Holiday, Special Holiday, Rest Day, or Regular Workday.
+     *  - Computes overtime, holiday pay, rest day OT pay, and populates a breakdown report per employee.
+     *
+     * @param employees     A map of employee ID to EmployeeData, loaded from the employee CSV.
+     * @param timeEntries   A list of time entries (clock in/out) to be processed.
+     * @return A map of employee-month keys (e.g., "EMP001-2024-06") to their MonthlySummary objects,
+     *         containing computed totals and breakdowns for payroll processing.
      */
     public static Map<String, MonthlySummary> calculateWorkedHours(
-        Map<String, EmployeeData> employees, 
-        List<TimeEntry> timeEntries) {  
+        Map<String, EmployeeData> employees,
+        List<TimeEntry> timeEntries) {
 
         Map<String, MonthlySummary> monthlySummaries = new HashMap<>();
 
@@ -123,16 +222,12 @@ public class MonthlySummary {
             if (emp == null) continue;
 
             YearMonth yearMonth = YearMonth.from(entry.getClockIn().toLocalDate());
-            String monthlyKey = entry.getEmpId() + "-" + yearMonth;  // Unique key per employee per month
+            String monthlyKey = entry.getEmpId() + "-" + yearMonth;
 
-            // Ensure we track monthly hours for each employee
             monthlySummaries.putIfAbsent(monthlyKey, new MonthlySummary(emp));
             MonthlySummary summary = monthlySummaries.get(monthlyKey);
 
-            float dailyWorkHours = entry.getHoursWorked();
-            float rawDailyWorkHours = Math.max(0f, dailyWorkHours);
-
-            float overtime = (rawDailyWorkHours >= 9f) ? rawDailyWorkHours - 8f : 0f;
+            float rawDailyWorkHours = Math.max(0f, entry.getHoursWorked());
             float lateMinutes = Math.max(0f, Duration.between(LocalTime.of(8, 30), entry.getClockIn().toLocalTime()).toMinutes());
             float lateDeduction = (lateMinutes > 0f) ? (lateMinutes / 60f) * emp.getHourlyRate() : 0f;
 
