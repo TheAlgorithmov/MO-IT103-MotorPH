@@ -33,23 +33,29 @@ public class MotorPHPayrollG3 {
             return;
         }
 
-        // Prompt user for start and end date
+        // Prompt user for Start and End Dates
         LocalDate startDate = null, endDate = null;
-        while (startDate == null || endDate == null || endDate.isBefore(startDate)) {
+
+        // Prompt Start Date until valid
+        while (startDate == null) {
             try {
                 System.out.print("Enter Start Date (YYYY-MM-DD): ");
                 startDate = LocalDate.parse(scanner.nextLine().trim());
+            } catch (Exception e) {
+                System.out.println("Invalid start date format. Please enter date in YYYY-MM-DD format.");
+            }
+        }
 
+        // Prompt End Date until valid and after Start Date
+        while (endDate == null || endDate.isBefore(startDate)) {
+            try {
                 System.out.print("Enter End Date (YYYY-MM-DD): ");
                 endDate = LocalDate.parse(scanner.nextLine().trim());
-
                 if (endDate.isBefore(startDate)) {
                     System.out.println("Error: End date cannot be before start date. Please try again.");
                 }
             } catch (Exception e) {
-                System.out.println("Invalid date format. Please enter dates in YYYY-MM-DD format.");
-                startDate = null;
-                endDate = null;
+                System.out.println("Invalid end date format. Please enter date in YYYY-MM-DD format.");
             }
         }
 
@@ -63,24 +69,26 @@ public class MotorPHPayrollG3 {
         // Calculate Monthly Worked Hours only for the filtered entries
         Map<String, MonthlySummary> monthlySummaries = MonthlySummary.calculateWorkedHours(employees, filteredTimeEntries);
 
-        // Prompt for Employee ID
-        System.out.print("Enter the 5-digit Employee ID to generate the compensation details: ");
-        String inputEmpId = scanner.nextLine().trim();
-
+        // Prompt for Employee ID until found in the summary
         boolean employeeFound = false;
+        while (!employeeFound) {
+            System.out.print("Enter the 5-digit Employee ID to generate the compensation details: ");
+            String inputEmpId = scanner.nextLine().trim();
 
-        for (Map.Entry<String, MonthlySummary> entry : monthlySummaries.entrySet()) {
-            MonthlySummary summary = entry.getValue();
-            EmployeeData employee = summary.getEmployee();
+            for (Map.Entry<String, MonthlySummary> entry : monthlySummaries.entrySet()) {
+                MonthlySummary summary = entry.getValue();
+                EmployeeData employee = summary.getEmployee();
 
-            if (employee.getEmpId().equals(inputEmpId)) {
-                employeeFound = true;
-                printPayrollReport(summary, employee, benefits, startDate, endDate);
+                if (employee.getEmpId().equals(inputEmpId)) {
+                    employeeFound = true;
+                    printPayrollReport(summary, employee, benefits, startDate, endDate);
+                    break;
+                }
             }
-        }
 
-        if (!employeeFound) {
-            System.out.println("No payroll data found for Employee ID: " + inputEmpId);
+            if (!employeeFound) {
+                System.out.println("No payroll data found for Employee ID: " + inputEmpId + ". Please try again.");
+            }
         }
 
         scanner.close();
