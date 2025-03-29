@@ -151,13 +151,19 @@ public class MotorPHPayrollG3 {
         System.out.printf(" Total Government Deductions: PHP (%,.2f)%n", totalGovtDeductions);
         System.out.println("--------------------------------------------------------------");
 
+        // Added Late  Deductions for accounting and audit transparency 
+        System.out.println(" Other Deductions:");
+        System.out.printf(" - Late Deductions          : PHP (%,.2f)%n", summary.getTotalLateDeductions());
+        System.out.println("--------------------------------------------------------------");
+        System.out.printf(" Total Deductions           : PHP (%,.2f)%n", totalDeductions);
+        System.out.println("--------------------------------------------------------------");
+
         // De Minimis Section
         System.out.println(" De Minimis Benefits:");
         System.out.printf(" Rice Subsidy              : PHP %,.2f%n", riceSubsidy);
         System.out.printf(" Phone Allowance           : PHP %,.2f%n", phoneAllowance);
         System.out.printf(" Clothing Allowance        : PHP %,.2f%n", clothingAllowance);
         System.out.println("--------------------------------------------------------------");
-
         System.out.printf(" Net Monthly Income (After Tax, with Benefits): PHP %,.2f%n", netPay);
         System.out.println("--------------------------------------------------------------");
 
@@ -170,9 +176,11 @@ public class MotorPHPayrollG3 {
     public static void printSummaryReport(MonthlySummary summary) {
         System.out.println("\n---------------- Monthly Work Hours & Deductions ----------------");
         Map<String, Object> data = summary.getSummaryData();
-        System.out.printf(" Total Worked Hours      : %.2f%n", data.get("totalWorkHours"));
-        System.out.printf(" Regular Worked Hours    : %.2f%n", data.get("totalRegularWorkHours"));
-        System.out.printf(" Holiday Worked Hours    : %.2f%n", data.get("totalHolidayWorkHours"));
+        System.out.printf(" Total Worked Hours      : %.2f hours%n", data.get("totalWorkHours"));
+        System.out.printf(" Regular Worked Hours    : %.2f hours%n", data.get("totalRegularWorkHours"));
+        System.out.printf(" Overtime Hours          : %.2f hours%n", data.get("totalOvertime"));
+        System.out.printf(" Holiday Worked Hours    : %.2f hours%n", data.get("totalHolidayWorkHours"));
+        System.out.printf(" Late Hours              : %.2f hours%n", summary.getSummaryData().get("totalLateHours")); //Added Late Hours for accounting and audit transparency 
         System.out.printf(" Overtime Pay            : PHP %,.2f%n", data.get("totalOvertimePay"));
         System.out.printf(" Holiday Pay             : PHP %,.2f%n", data.get("totalHolidayPay"));
         System.out.printf(" Rest Day OT Pay         : PHP %,.2f%n", data.get("totalRestDayOTPay"));

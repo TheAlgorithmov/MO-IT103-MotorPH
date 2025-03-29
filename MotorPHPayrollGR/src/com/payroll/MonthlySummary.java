@@ -8,6 +8,8 @@ import java.util.*;
  */
 public class MonthlySummary {
     private final EmployeeData employee;
+    private float totalRegularHours = 0f; // Added declaration for Regular hours
+    private float totalHolidayWorkedHours = 0f; // Added declaration for Holiday Worked Hours
     private float totalWorkHours = 0f, totalOvertime = 0f, totalLateDeductions = 0f, totalOvertimePay = 0f;
     private float totalHolidayPay = 0f, totalRestDayOTPay = 0f, totalLateHours = 0f;
     private final StringBuilder breakdownOutput = new StringBuilder();
@@ -27,16 +29,18 @@ public class MonthlySummary {
         float lateHours = lateMinutes / 60f;
         totalLateHours += lateHours;
 
-        float dailyWorkHours = Math.max(0f, rawDailyWorkHours - 1f);
-        float regularWorkHours = Math.min(8f, dailyWorkHours);
+        float dailyWorkHours = Math.max(0f, rawDailyWorkHours - 1f); // subtract 1 hr lunch
+        float regularWorkHours = Math.min(8f, dailyWorkHours);       // regular hours up to 8
         float overtimeHours = (dailyWorkHours >= 9f) ? dailyWorkHours - 8f : 0f;
 
         totalWorkHours += dailyWorkHours;
+        totalRegularHours += regularWorkHours; // Accumulate regular hours separately
         totalOvertime += overtimeHours;
         totalLateDeductions += lateDeduction;
 
         float dailyHolidayPay = 0f;
         if (isHoliday) {
+            totalHolidayWorkedHours += dailyWorkHours; // ✅ Track holiday hours
             dailyHolidayPay = dailyWorkHours * employee.getHourlyRate() * (holidayMultiplier - 1f);
             totalHolidayPay += dailyHolidayPay;
         }
@@ -126,8 +130,8 @@ public class MonthlySummary {
     public Map<String, Object> getSummaryData() {
         Map<String, Object> data = new HashMap<>();
         data.put("totalWorkHours", totalWorkHours);
-        data.put("totalRegularWorkHours", totalWorkHours); // Optional: refine if tracking regular separately
-        data.put("totalHolidayWorkHours", 0f); // Optional: currently not tracked independently
+        data.put("totalRegularWorkHours", totalRegularHours); // Fixed to return correct regular hours
+        data.put("totalHolidayWorkHours", totalHolidayWorkedHours); // Updated tracker to so that Holiday Work hours won't print 0.00 Values
         data.put("totalOvertime", totalOvertime);
         data.put("totalOvertimePay", totalOvertimePay);
         data.put("totalHolidayPay", totalHolidayPay);
@@ -145,7 +149,9 @@ public class MonthlySummary {
             + " Summary of Monthly Work Hours & Deductions \n"
             + "--------------------------------------------------------------\n"
             + String.format(" Total Worked Hours      : %.2f%n", totalWorkHours)
+            + String.format(" Total Regular Hours     : %.2f%n", totalRegularHours)
             + String.format(" Total Overtime Hours    : %.2f%n", totalOvertime)
+            + String.format(" Total Holiday Hours      : %.2f%n", totalHolidayWorkedHours)    
             + String.format(" Total Overtime Pay      : PHP %.2f%n", totalOvertimePay)
             + String.format(" Total Holiday Pay       : PHP %.2f%n", totalHolidayPay)
             + String.format(" Total Rest Day OT Pay   : PHP %.2f%n", totalRestDayOTPay)
@@ -184,7 +190,9 @@ public class MonthlySummary {
         report.append("Hourly Rate           : PHP ").append(String.format("%.2f", employee.getHourlyRate())).append("\n");
         report.append("--------------------------------------------------\n");
         report.append(String.format("Total Work Hours      : %.2f\n", totalWorkHours));
+        report.append(String.format("Total Regular Hours   : %.2f\n", totalRegularHours));
         report.append(String.format("Total Overtime Hours  : %.2f\n", totalOvertime));
+        report.append(String.format("Total Holiday Hours      : %.2f\n", totalHolidayWorkedHours));
         report.append(String.format("Total Overtime Pay    : PHP %.2f\n", totalOvertimePay));
         report.append(String.format("Total Holiday Pay     : PHP %.2f\n", totalHolidayPay));
         report.append(String.format("Total Rest Day OT Pay : PHP %.2f\n", totalRestDayOTPay));
