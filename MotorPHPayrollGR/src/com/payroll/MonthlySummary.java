@@ -16,7 +16,6 @@ public class MonthlySummary {
 
     /**
      * Constructor to initialize monthly summary for an employee.
-     * @param employee The {@link EmployeeData} object
      */
     public MonthlySummary(EmployeeData employee) {
         this.employee = employee;
@@ -24,14 +23,6 @@ public class MonthlySummary {
 
     /**
      * Adds daily work details to the monthly summary.
-     * @param date The date
-     * @param rawDailyWorkHours The raw amount of daily work hours the employee has
-     * @param lateMinutes How many minutes the employee is late by
-     * @param lateDeduction The late deduction
-     * @param isHoliday Whether the employee worked on a holiday
-     * @param isRestDay Whether the employee worked on their rest day
-     * @param isHolidayRestDay Whether the employee worked on a holiday and their rest day
-     * @param holidayMultiplier The holiday multiplier
      */
     public void addDailyWork(LocalDate date, float rawDailyWorkHours, float lateMinutes, float lateDeduction,
                          boolean isHoliday, boolean isRestDay, boolean isHolidayRestDay, float holidayMultiplier) {
@@ -71,11 +62,13 @@ public class MonthlySummary {
             workTypeLabel = "Holiday + Rest Day";
         } else if (isHoliday) {
             // Case: Employee worked on a holiday (determine type by holiday multiplier)
-            workTypeLabel = switch(holidayMultiplier){
-                case 2.00f -> "Regular Holiday";
-                case 1.30f -> "Special Holiday";
-                default -> "Holiday"; // Fallback for any other special cases
-            };
+            if (holidayMultiplier == 2.00f) {
+                workTypeLabel = "Regular Holiday";
+            } else if (holidayMultiplier == 1.30f) {
+                workTypeLabel = "Special Holiday";
+            } else {
+                workTypeLabel = "Holiday"; // Fallback for any other special cases
+            }
         } else if (isRestDay) {
             // Case: Employee worked on their scheduled rest day
             workTypeLabel = "Rest Day";
@@ -133,7 +126,6 @@ public class MonthlySummary {
 
     /**
      * Returns summary data in key-value map for external use (e.g., payroll report).
-     * @return a {@link Map} of summary data.
      */
     public Map<String, Object> getSummaryData() {
         Map<String, Object> data = new HashMap<>();
@@ -151,15 +143,11 @@ public class MonthlySummary {
 
     /**
      * Generates a summary report of work hours and deductions.
-     * @return a summary report.
      */
     public String getSummaryReport() {
-        return """
-               
-               --------------------------------------------------------------
-                Summary of Monthly Work Hours & Deductions 
-               --------------------------------------------------------------
-               """
+        return "\n--------------------------------------------------------------\n"
+            + " Summary of Monthly Work Hours & Deductions \n"
+            + "--------------------------------------------------------------\n"
             + String.format(" Total Worked Hours      : %.2f%n", totalWorkHours)
             + String.format(" Total Regular Hours     : %.2f%n", totalRegularHours)
             + String.format(" Total Overtime Hours    : %.2f%n", totalOvertime)
@@ -175,31 +163,23 @@ public class MonthlySummary {
 
     /**
      * Returns detailed daily breakdown of overtime and deductions.
-     * @return A breakdown of overtime & unpaid work hour deductions. "No overtime or late deductions recorded." otherwise.
      */
     public String getBreakdownReport() {
         if (breakdownOutput.length() == 0) {
-            return """
-                   
-                   ---------------- Overtime & Unpaid Work Hour Deductions Breakdown ----------------
-                        Day     |     Work Type    | OT Hours |OT Rate |    OT Pay    |  Late Minutes|  Late Deduction
-                   ----------------------------------------------------------------------------------------
-                   No overtime or late deductions recorded.
-                   """;
+            return "\n---------------- Overtime & Unpaid Work Hour Deductions Breakdown ----------------\n"
+                + "     Day     |     Work Type    | OT Hours |OT Rate |    OT Pay    |  Late Minutes|  Late Deduction\n"
+                + "----------------------------------------------------------------------------------------\n"
+                + "No overtime or late deductions recorded.\n";
         }
-        return """
-               
-               ---------------- Overtime & Unpaid Work Hour Deductions Breakdown ----------------
-                    Day     |     Work Type    | OT Hours |OT Rate |    OT Pay    |  Late Minutes|  Late Deduction
-               ----------------------------------------------------------------------------------------
-               """
+        return "\n---------------- Overtime & Unpaid Work Hour Deductions Breakdown ----------------\n"
+            + "     Day     |     Work Type    | OT Hours |OT Rate |    OT Pay    |  Late Minutes|  Late Deduction\n"
+            + "----------------------------------------------------------------------------------------\n"
             + breakdownOutput.toString()
             + "----------------------------------------------------------------------------------------\n";
     }
 
     /**
      * Combines employee header, summary, and breakdown.
-     * @return a full breakdown report.
      */
     public String generateFullBreakdownReport() {
         StringBuilder report = new StringBuilder();
