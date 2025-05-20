@@ -2,6 +2,7 @@ package com.payroll;
 
 import java.util.*;
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 
 /**
  * MotorPHPayrollG3 - Main payroll processing system.
@@ -12,6 +13,7 @@ public class MotorPHPayrollG3 {
     public static void main(String[] args) {
         System.out.println("Starting Payroll System...");
         Scanner scanner = new Scanner(System.in);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy");
 
         // Load Employee Data
         Map<String, EmployeeData> employees = EmployeeData.loadEmployeeData("src/com/payroll/EmployeeData.csv");
@@ -39,23 +41,23 @@ public class MotorPHPayrollG3 {
         // Prompt Start Date until valid
         while (startDate == null) {
             try {
-                System.out.print("Enter Start Date (YYYY-MM-DD): ");
-                startDate = LocalDate.parse(scanner.nextLine().trim());
+                System.out.print("Enter Start Date (MM/DD/YYYY): ");
+                startDate = LocalDate.parse(scanner.nextLine().trim(), formatter);
             } catch (Exception e) {
-                System.out.println("Invalid start date format. Please enter date in YYYY-MM-DD format.");
+                System.out.println("Invalid start date format. Please enter date in MM/DD/YYYY format.");
             }
         }
 
         // Prompt End Date until valid and after Start Date
         while (endDate == null || endDate.isBefore(startDate)) {
             try {
-                System.out.print("Enter End Date (YYYY-MM-DD): ");
-                endDate = LocalDate.parse(scanner.nextLine().trim());
+                System.out.print("Enter End Date (MM/DD/YYYY): ");
+                endDate = LocalDate.parse(scanner.nextLine().trim(), formatter);
                 if (endDate.isBefore(startDate)) {
                     System.out.println("Error: End date cannot be before start date. Please try again.");
                 }
             } catch (Exception e) {
-                System.out.println("Invalid end date format. Please enter date in YYYY-MM-DD format.");
+                System.out.println("Invalid end date format. Please enter date in MM/DD/YYYY format.");
             }
         }
 
@@ -81,7 +83,7 @@ public class MotorPHPayrollG3 {
 
                 if (employee.getEmpId().equals(inputEmpId)) {
                     employeeFound = true;
-                    printPayrollReport(summary, employee, benefits, startDate, endDate);
+                    printPayrollReport(summary, employee, benefits, startDate, endDate, formatter);
                     break;
                 }
             }
@@ -98,7 +100,9 @@ public class MotorPHPayrollG3 {
      * Prints the payroll report for an employee.
      */
     public static void printPayrollReport(MonthlySummary summary, EmployeeData employee,
-                                          Map<String, DeMinimisBenefits> benefits, LocalDate startDate, LocalDate endDate) {
+                                          Map<String, DeMinimisBenefits> benefits,
+                                          LocalDate startDate, LocalDate endDate,
+                                          DateTimeFormatter formatter) {
         // Compute De Minimis Benefits (Monthly)
         float riceSubsidy = benefits.getOrDefault(employee.getEmpId(), new DeMinimisBenefits(employee.getEmpId(), 0f, 0f, 0f)).getRiceSubsidy();
         float phoneAllowance = benefits.getOrDefault(employee.getEmpId(), new DeMinimisBenefits(employee.getEmpId(), 0f, 0f, 0f)).getPhoneAllowance();
@@ -141,7 +145,7 @@ public class MotorPHPayrollG3 {
                 employee.getEmpId(), employee.getName(), employee.getDob());
         System.out.printf(" Hourly Rate: PHP %,.2f | Status: %s | Position: %s%n",
                 employee.getHourlyRate(), employee.getStatus(), employee.getPosition());
-        System.out.printf(" Payroll Period: %s to %s%n", startDate, endDate);
+        System.out.printf(" Payroll Period: %s to %s%n", startDate.format(formatter), endDate.format(formatter));
         System.out.println("--------------------------------------------------------------");
         System.out.printf(" Worked Hours               : %.2f hours%n", summary.getTotalWorkHours());
         System.out.printf(" Overtime Hours             : %.2f hours%n", summary.getTotalOvertime());
@@ -159,7 +163,7 @@ public class MotorPHPayrollG3 {
         System.out.printf(" Total Government Deductions: PHP (%,.2f)%n", totalGovtDeductions);
         System.out.println("--------------------------------------------------------------");
 
-        // Added Late  Deductions for accounting and audit transparency 
+        // Added Late Deductions for accounting and audit transparency 
         System.out.println(" Other Deductions:");
         System.out.printf(" - Late Deductions          : PHP (%,.2f)%n", summary.getTotalLateDeductions());
         System.out.println("--------------------------------------------------------------");
@@ -188,7 +192,7 @@ public class MotorPHPayrollG3 {
         System.out.printf(" Regular Worked Hours    : %.2f hours%n", data.get("totalRegularWorkHours"));
         System.out.printf(" Overtime Hours          : %.2f hours%n", data.get("totalOvertime"));
         System.out.printf(" Holiday Worked Hours    : %.2f hours%n", data.get("totalHolidayWorkHours"));
-        System.out.printf(" Late Hours              : %.2f hours%n", summary.getSummaryData().get("totalLateHours")); //Added Late Hours for accounting and audit transparency 
+        System.out.printf(" Late Hours              : %.2f hours%n", summary.getSummaryData().get("totalLateHours"));
         System.out.printf(" Overtime Pay            : PHP %,.2f%n", data.get("totalOvertimePay"));
         System.out.printf(" Holiday Pay             : PHP %,.2f%n", data.get("totalHolidayPay"));
         System.out.printf(" Rest Day OT Pay         : PHP %,.2f%n", data.get("totalRestDayOTPay"));
