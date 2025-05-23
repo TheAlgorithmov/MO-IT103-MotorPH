@@ -11,7 +11,6 @@ package com.gui;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
 import java.io.*;
 
 public class PayrollSlip extends JFrame {
@@ -75,7 +74,7 @@ public class PayrollSlip extends JFrame {
     
     private String generateSlipText(String empId, String name, String dob, String position, String status, String hourlyRate, String payStart, String payEnd, String wrkHrs, String otHrs, String grossIncome, String sssCon, String hdmfCon, String philHealthCon, String taxIncome, String birTax, String lateDed, String totalDed,String rice, String phone, String clothing,String netIncome) {
         return "=====================================\n"
-                + "PAYROLL SLIP\n"
+                + "        MOTORPH PAYROLL SLIP\n"
                 + "=====================================\n"
                 + "Employee ID: " + empId + "\n"
                 + "Name: " + name + "\n"

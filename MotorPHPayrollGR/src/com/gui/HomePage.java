@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import javax.swing.border.*;
-import java.awt.image.BufferedImage;
 
 public class HomePage extends JFrame {
     
@@ -45,13 +44,23 @@ public class HomePage extends JFrame {
         userInfoPanel.setLayout(new BoxLayout(userInfoPanel, BoxLayout.Y_AXIS));
         userInfoPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         userInfoPanel.setOpaque(false);
-        JLabel userIcon = new JLabel();
-        userIcon.setIcon(addBorderToIcon(loadImage("/user-64px.png"), 80, 80));
+        
+        JLabel userIcon = new JLabel("👤", SwingConstants.CENTER);
+        userIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 46));
+        userIcon.setPreferredSize(new Dimension(80, 80));
+        userIcon.setMinimumSize(new Dimension(80, 80));
+        userIcon.setMaximumSize(new Dimension(80, 80));
+        userIcon.setOpaque(true);
+        userIcon.setBackground(Color.GRAY);
+        userIcon.setForeground(Color.WHITE);
         userIcon.setAlignmentX(Component.CENTER_ALIGNMENT);
+        userIcon.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 2));
+        
         uFullName = currentUser.getuFirstName() + " " + currentUser.getuLastName();
         JLabel nameLabel = new JLabel(uFullName);
         nameLabel.setForeground(Color.WHITE);
         nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
         userInfoPanel.add(Box.createVerticalStrut(30));
         userInfoPanel.add(userIcon);
         userInfoPanel.add(Box.createVerticalStrut(10));
@@ -61,7 +70,7 @@ public class HomePage extends JFrame {
         JPanel navPanel = new JPanel();
         navPanel.setLayout(new BoxLayout(navPanel, BoxLayout.Y_AXIS));
         navPanel.setOpaque(false);
-        navPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
+        // navPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
 
         JButton homeBtn = styleButton("Home Page");
         JButton payrollBtn = styleButton("Payroll Management");
@@ -79,7 +88,7 @@ public class HomePage extends JFrame {
         JPanel accountPanel = new JPanel();
         accountPanel.setLayout(new BoxLayout(accountPanel, BoxLayout.Y_AXIS));
         accountPanel.setOpaque(false);
-        accountPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
+        // accountPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
 
         JLabel accountLabel = new JLabel("Account");
         accountLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -152,8 +161,15 @@ public class HomePage extends JFrame {
         JPanel infoPanel = new JPanel(new BorderLayout(10, 10));
         infoPanel.setBackground(Color.WHITE);
 
-        JLabel photoLabel = new JLabel();
-        photoLabel.setIcon(addBorderToIcon(loadImage("/user-256px.png"), 150, 150));
+        JLabel photoLabel = new JLabel("👤", SwingConstants.CENTER);
+        photoLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 92));
+        photoLabel.setPreferredSize(new Dimension(150, 150));
+        photoLabel.setMinimumSize(new Dimension(150, 150));
+        photoLabel.setMaximumSize(new Dimension(150, 150));
+        photoLabel.setOpaque(true);
+        photoLabel.setBackground(Color.GRAY);
+        photoLabel.setForeground(Color.WHITE);
+        photoLabel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 2));
         infoPanel.add(photoLabel, BorderLayout.WEST);
 
         JPanel detailsPanel = new JPanel();
@@ -200,27 +216,6 @@ public class HomePage extends JFrame {
         setLocationRelativeTo(null);
         setVisible(true);
         setResizable(false);
-    }
-    
-    private ImageIcon loadImage(String fileName) {
-        java.net.URL imgURL = getClass().getResource(fileName);
-        if (imgURL != null) {
-            return new ImageIcon(imgURL);
-        } else {
-            System.out.println("Image not found: " + fileName);
-            return new ImageIcon(); // fallback
-        }
-    }
-
-    private ImageIcon addBorderToIcon(ImageIcon icon, int width, int height) {
-        Image image = icon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
-        BufferedImage buffered = new BufferedImage(width + 4, height + 4, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = buffered.createGraphics();
-        g2.setColor(new Color(200, 200, 200));
-        g2.fillRect(0, 0, width + 4, height + 4);
-        g2.drawImage(image, 2, 2, null);
-        g2.dispose();
-        return new ImageIcon(buffered);
     }
 
     private JButton styleButton(String text) {
