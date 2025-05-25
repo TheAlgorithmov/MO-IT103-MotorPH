@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.JOptionPane;
-import com.payroll.ui.DashboardFrame;
+import com.payroll.ui.EmployeeDashboardFrame;
 import java.awt.Color;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
@@ -234,16 +234,29 @@ public class LoginUI extends javax.swing.JFrame {
         jProgressBar1.setIndeterminate(true);
 
         String user = jTextField1.getText().trim();
-        String pass = new String(jPasswordField1.getPassword());
+    String pass = new String(jPasswordField1.getPassword());
 
-        if (credentials.containsKey(user) && credentials.get(user).equals(pass)) {
-            JOptionPane.showMessageDialog(this, "Login successful.", "Welcome", JOptionPane.INFORMATION_MESSAGE);
-            new DashboardFrame().setVisible(true);
-            this.dispose();
-        } else {
-            JOptionPane.showMessageDialog(this, "Invalid username or password.", "Error", JOptionPane.ERROR_MESSAGE);
-            jPasswordField1.setText("");
-        }
+    if (credentials.containsKey(user) && credentials.get(user).equals(pass)) {
+        // show personalized welcome
+        JOptionPane.showMessageDialog(
+            this,
+            "Login successful.\nWelcome, " + user + "!",
+            "Welcome",
+            JOptionPane.INFORMATION_MESSAGE
+        );
+
+        // pass the user along to the new frame
+        new EmployeeDashboardFrame(user).setVisible(true);
+        dispose();
+    } else {
+        JOptionPane.showMessageDialog(
+            this,
+            "Invalid username or password.",
+            "Error",
+            JOptionPane.ERROR_MESSAGE
+        );
+        jPasswordField1.setText("");
+    }
 
         // hide spinner
         jProgressBar1.setIndeterminate(false);
