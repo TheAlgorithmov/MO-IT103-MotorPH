@@ -1,0 +1,440 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
+ */
+
+/**
+ *
+ * @author JEO & Miles
+ */
+
+package com.gui;
+
+import java.awt.Color;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.HashMap;
+import java.util.Map;
+import javax.swing.JOptionPane;
+
+
+/**
+ * LoginForm - JFrame login UI with username/password, placeholders, spinner,
+ * credential lookup, and HomePage launch with full User.
+ * Make sure to update variable names if your .form file uses different ones!
+ */
+
+public class LoginForm extends javax.swing.JFrame {
+    
+    //Login Handler Declarations 
+    private final Map<String, Integer> failedAttempts = new HashMap<>();
+    private final Map<String, javax.swing.Timer> lockoutTimers = new HashMap<>();
+    private final Map<String, Boolean> lockoutFlags = new HashMap<>();
+    private static final int MAX_ATTEMPTS = 3;
+    private static final int LOCKOUT_DURATION_MS = 60_000; // 1 minute for testing; use 300_000 for 5 mins
+
+    
+    private final Map<String, String> credentials = new HashMap<>();
+
+    public LoginForm() {
+        initComponents();
+
+        //Frame Size and Position
+        setSize(500, 600); // Or any size best fits form
+        setResizable(false);
+        setLocationRelativeTo(null); // This centers the window on the screen
+        
+        // Placeholders for username
+        jTextField1.setForeground(Color.GRAY);
+        jTextField1.setText("USERNAME");
+        jTextField1.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (jTextField1.getText().equals("USERNAME")) {
+                    jTextField1.setText("");
+                    jTextField1.setForeground(Color.BLACK);
+                }
+            }
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (jTextField1.getText().isEmpty()) {
+                    jTextField1.setForeground(Color.GRAY);
+                    jTextField1.setText("USERNAME");
+                }
+            }
+        });
+
+        // Placeholders for password
+        jPasswordField1.setForeground(Color.GRAY);
+        jPasswordField1.setEchoChar((char)0);
+        jPasswordField1.setText("PASSWORD");
+        jPasswordField1.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                String pwd = new String(jPasswordField1.getPassword());
+                if (pwd.equals("PASSWORD")) {
+                    jPasswordField1.setText("");
+                    jPasswordField1.setForeground(Color.BLACK);
+                    jPasswordField1.setEchoChar('•');
+                }
+            }
+            @Override
+            public void focusLost(FocusEvent e) {
+                String pwd = new String(jPasswordField1.getPassword());
+                if (pwd.isEmpty()) {
+                    jPasswordField1.setForeground(Color.GRAY);
+                    jPasswordField1.setEchoChar((char)0);
+                    jPasswordField1.setText("PASSWORD");
+                }
+            }
+        });
+
+        // Load credentials from /com/gui/LoginCredentials.csv
+        loadCredentials();
+
+        // hide spinner
+        jProgressBar1.setIndeterminate(false);
+        jProgressBar1.setVisible(false);
+
+        // Make Enter key activate Login
+        getRootPane().setDefaultButton(jButton1);
+        
+        // Enable/disable Log in button dynamically based on field values and lockout state
+        jButton1.setEnabled(false);
+
+        javax.swing.event.DocumentListener docListener = new javax.swing.event.DocumentListener() {
+            void update() {
+                String user = jTextField1.getText().trim();
+                String pass = new String(jPasswordField1.getPassword());
+                boolean isLocked = lockoutFlags.getOrDefault(user, false);
+                boolean enable = !isLocked
+                    && !user.isEmpty() && !user.equals("USERNAME")
+                    && !pass.isEmpty() && !pass.equals("PASSWORD");
+                jButton1.setEnabled(enable);
+            }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { update(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { update(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { update(); }
+        };
+        jTextField1.getDocument().addDocumentListener(docListener);
+        jPasswordField1.getDocument().addDocumentListener(docListener);
+    }
+    
+    
+    private void loadCredentials() {
+        credentials.clear();
+        try (
+            BufferedReader br = new BufferedReader(
+                new InputStreamReader(getClass().getResourceAsStream("/com/gui/LoginCredentials.csv")))
+        ) {
+            String line = br.readLine(); // header
+            if (line != null && line.startsWith("\uFEFF")) line = line.substring(1);
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length < 2) continue;
+                String user = parts[0].trim();
+                if (user.equalsIgnoreCase("username")) continue;
+                String pass = parts[1].trim();
+                credentials.put(user, pass);
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                "Error loading credentials:\n" + ex.getMessage(),
+                "Load Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+
+    /** Reads employee info from /com/payroll/EmployeeData.csv and returns User */
+    private User getUserFromEmployeeData(String username) {
+        String path = "/com/payroll/EmployeeData.csv";
+        try (
+            BufferedReader br = new BufferedReader(
+                new InputStreamReader(getClass().getResourceAsStream(path)))
+        ) {
+            String line = br.readLine(); // header
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
+                // Adjust indices as needed for your actual file structure!
+                if (parts.length >= 6 && parts[0].trim().equals(username)) {
+                    String empId = parts[0].trim();
+                    String firstName = parts[1].trim();
+                    String lastName = parts[2].trim();
+                    String dob = parts[3].trim();
+                    String position = parts[9].trim();
+                    String status = parts[8].trim();
+                    return new User(empId, firstName, lastName, dob, position, status);
+                }
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error reading user info:\n" + ex.getMessage(), "File Error", JOptionPane.ERROR_MESSAGE);
+        }
+        return null;
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        jPanel2 = new javax.swing.JPanel();
+        jProgressBar1 = new javax.swing.JProgressBar();
+        jButton1 = new javax.swing.JButton();
+        jPasswordField1 = new javax.swing.JPasswordField();
+        jLabel4 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        jTextField1 = new javax.swing.JTextField();
+        jLabel1 = new javax.swing.JLabel();
+
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 100, Short.MAX_VALUE)
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 100, Short.MAX_VALUE)
+        );
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setMaximumSize(new java.awt.Dimension(500, 500));
+        setPreferredSize(new java.awt.Dimension(500, 500));
+
+        jProgressBar1.setPreferredSize(new java.awt.Dimension(100, 5));
+
+        jButton1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/gui/images/LoginIcons/login.png"))); // NOI18N
+        jButton1.setText("Log in");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton1ActionPerformed(evt);
+            }
+        });
+
+        jPasswordField1.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        jPasswordField1.setText("Password");
+        jPasswordField1.setCursor(new java.awt.Cursor(java.awt.Cursor.TEXT_CURSOR));
+        jPasswordField1.setPreferredSize(new java.awt.Dimension(75, 25));
+
+        jLabel4.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/gui/images/LoginIcons/password.png"))); // NOI18N
+
+        jLabel3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/gui/images/LoginIcons/username.png"))); // NOI18N
+
+        jTextField1.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        jTextField1.setText("USERNAME");
+        jTextField1.setPreferredSize(new java.awt.Dimension(75, 25));
+
+        jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/gui/images/LoginIcons/Logo2.png"))); // NOI18N
+        jLabel1.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        jLabel1.setDoubleBuffered(true);
+        jLabel1.setFocusCycleRoot(true);
+        jLabel1.setFocusTraversalPolicyProvider(true);
+        jLabel1.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        jLabel1.setMaximumSize(new java.awt.Dimension(400, 400));
+        jLabel1.setOpaque(true);
+        jLabel1.setPreferredSize(new java.awt.Dimension(350, 350));
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(96, 96, 96)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(layout.createSequentialGroup()
+                                .addGap(53, 53, 53)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(jProgressBar1, javax.swing.GroupLayout.PREFERRED_SIZE, 156, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                        .addGroup(layout.createSequentialGroup()
+                                            .addComponent(jLabel3)
+                                            .addGap(12, 12, 12)
+                                            .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                        .addGroup(layout.createSequentialGroup()
+                                            .addComponent(jLabel4)
+                                            .addGap(12, 12, 12)
+                                            .addComponent(jPasswordField1, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE)))))))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(208, 208, 208)
+                        .addComponent(jButton1)))
+                .addContainerGap(87, Short.MAX_VALUE))
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addGap(31, 31, 31)
+                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(4, 4, 4)
+                        .addComponent(jLabel3))
+                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(4, 4, 4)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(2, 2, 2)
+                        .addComponent(jLabel4))
+                    .addComponent(jPasswordField1, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
+                .addComponent(jButton1)
+                .addGap(18, 18, 18)
+                .addComponent(jProgressBar1, javax.swing.GroupLayout.PREFERRED_SIZE, 17, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(52, Short.MAX_VALUE))
+        );
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        // TODO add your handling code here:
+        // show spinner
+        jProgressBar1.setVisible(true);
+        jProgressBar1.setIndeterminate(true);
+
+        String user = jTextField1.getText().trim();
+        String pass = new String(jPasswordField1.getPassword());
+
+        int attempts = failedAttempts.getOrDefault(user, 0);
+        boolean isLocked = lockoutFlags.getOrDefault(user, false);
+
+        // Blank fields
+        if (user.isEmpty() || user.equals("USERNAME")) {
+            JOptionPane.showMessageDialog(this, "Please Enter Username & Password", "Missing Information", JOptionPane.WARNING_MESSAGE);
+        } else if (pass.isEmpty() || pass.equals("PASSWORD")) {
+            JOptionPane.showMessageDialog(this, "Please Enter Password", "Missing Information", JOptionPane.WARNING_MESSAGE);
+        } else if (!credentials.containsKey(user)) {
+            JOptionPane.showMessageDialog(this, "Please enter valid username. Username is your Employee ID Number.", "Invalid Username", JOptionPane.ERROR_MESSAGE);
+        } else if (isLocked) {
+            JOptionPane.showMessageDialog(this, "Account locked due to failed attempts. Please try again later.", "Locked Out", JOptionPane.ERROR_MESSAGE);
+        } else if (!credentials.get(user).equals(pass)) {
+            // Wrong password
+            attempts++;
+            failedAttempts.put(user, attempts);
+            int remaining = MAX_ATTEMPTS - attempts;
+            if (attempts >= MAX_ATTEMPTS) {
+                lockoutFlags.put(user, true);
+                jButton1.setEnabled(false);
+
+                javax.swing.Timer lockout = new javax.swing.Timer(LOCKOUT_DURATION_MS, e -> {
+                    failedAttempts.put(user, 0);
+                    lockoutTimers.remove(user);
+                    lockoutFlags.put(user, false);
+                    JOptionPane.showMessageDialog(LoginForm.this, "Login re-enabled. You may try again.", "Login Available", JOptionPane.INFORMATION_MESSAGE);
+                    // Re-enable if fields are valid and user is not locked
+                    String typedUser = jTextField1.getText().trim();
+                    String typedPass = new String(jPasswordField1.getPassword());
+                    boolean enable = !lockoutFlags.getOrDefault(typedUser, false)
+                            && !typedUser.isEmpty() && !typedUser.equals("USERNAME")
+                            && !typedPass.isEmpty() && !typedPass.equals("PASSWORD");
+                    jButton1.setEnabled(enable);
+                });
+                lockout.setRepeats(false);
+                lockout.start();
+                lockoutTimers.put(user, lockout);
+
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Failed log in attempts maxed for this user!\nPlease contact admin or try again after " + (LOCKOUT_DURATION_MS/1000) + " seconds.",
+                    "Login Locked",
+                    JOptionPane.ERROR_MESSAGE
+                );
+            } else {
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Incorrect password. Attempt " + attempts + " of " + MAX_ATTEMPTS + ".",
+                    "Incorrect Password",
+                    JOptionPane.ERROR_MESSAGE
+                );
+                jPasswordField1.setText("");
+            }
+        } else {
+            // Success
+            failedAttempts.put(user, 0);
+            lockoutFlags.put(user, false);
+            if (lockoutTimers.containsKey(user)) {
+                lockoutTimers.get(user).stop();
+                lockoutTimers.remove(user);
+            }
+            User loggedUser = getUserFromEmployeeData(user);
+            if (loggedUser != null) {
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Login successful.\nWelcome, " + loggedUser.getuFirstName() + "!",
+                    "Welcome",
+                    JOptionPane.INFORMATION_MESSAGE
+                );
+                new HomePage(loggedUser).setVisible(true);
+                dispose();
+            } else {
+                JOptionPane.showMessageDialog(
+                    this,
+                    "User data not found. Contact admin.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+                );
+            }
+        }
+
+        jProgressBar1.setIndeterminate(false);
+        jProgressBar1.setVisible(false);
+    }//GEN-LAST:event_jButton1ActionPerformed
+
+    
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(LoginForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(LoginForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(LoginForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(LoginForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new LoginForm().setVisible(true);
+            }
+        });
+    }
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jButton1;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JPanel jPanel2;
+    private javax.swing.JPasswordField jPasswordField1;
+    private javax.swing.JProgressBar jProgressBar1;
+    private javax.swing.JTextField jTextField1;
+    // End of variables declaration//GEN-END:variables
+}
