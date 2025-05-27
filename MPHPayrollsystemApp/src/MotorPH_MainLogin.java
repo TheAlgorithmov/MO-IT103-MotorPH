@@ -208,7 +208,7 @@ public class MotorPH_MainLogin extends javax.swing.JFrame {
                         switch (role) {
                             case "IT" -> new DashboardFrame(fullName, role, description).setVisible(true);
                             case "HR" -> new DashboardFrame(fullName, role, description).setVisible(true);
-                            case "PAYROLL" -> new PYR_MainWindow(fullName, description).setVisible(true);
+                            //case "PAYROLL" -> new PYR_MainWindow(fullName, description).setVisible(true);
                         }
                         break;
                     }

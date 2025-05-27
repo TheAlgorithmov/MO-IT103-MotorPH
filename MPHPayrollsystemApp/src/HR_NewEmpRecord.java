@@ -463,7 +463,7 @@ public class HR_NewEmpRecord extends javax.swing.JFrame {
 }
     
     private void btnViewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnViewActionPerformed
-        new HR_EmpRecords();// TODO add your handling code here:
+        new HR_EditEmpRec();// TODO add your handling code here:
     }//GEN-LAST:event_btnViewActionPerformed
 
     private void txtFirstnameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtFirstnameActionPerformed
