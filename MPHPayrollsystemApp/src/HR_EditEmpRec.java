@@ -722,12 +722,29 @@ try (PrintWriter pw = new PrintWriter(new FileWriter("src/data/EmployeeData.csv"
     }//GEN-LAST:event_tblEmployeesMouseClicked
 
     private void btbDeleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btbDeleteActionPerformed
-        int row = tblEmployees.getSelectedRow();
-    if (row >= 0) {
-        ((DefaultTableModel) tblEmployees.getModel()).removeRow(row);
+       int selectedRow = tblEmployees.getSelectedRow();
+
+    if (selectedRow >= 0) {
+        int confirm = JOptionPane.showConfirmDialog(
+            this,
+            "Are you sure you want to delete this record?",
+            "Confirm Delete",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+        );
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            DefaultTableModel model = (DefaultTableModel) tblEmployees.getModel();
+            model.removeRow(selectedRow);
+            JOptionPane.showMessageDialog(this, "Record deleted.");
+        } else {
+            JOptionPane.showMessageDialog(this, "Deletion canceled.");
+        }
+
     } else {
         JOptionPane.showMessageDialog(this, "Please select a row to delete.");
     }
+
 
     }//GEN-LAST:event_btbDeleteActionPerformed
 
