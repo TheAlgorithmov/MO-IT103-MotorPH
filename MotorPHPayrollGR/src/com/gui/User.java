@@ -14,8 +14,7 @@ public class User {
     private String uLastName;
     private String uDob;
     private String uPosition;
-    private String uStatus;
-    
+    private String uStatus;    
     public User(String uEmpId, String uFirstName, String uLastName, String uDob, String uPosition, String uStatus) {
         this.uEmpId = uEmpId;
         this.uFirstName = uFirstName;
