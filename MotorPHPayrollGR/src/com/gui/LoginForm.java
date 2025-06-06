@@ -18,6 +18,11 @@ import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.JOptionPane;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
+import javax.swing.text.DocumentFilter.FilterBypass;
 
 
 /**
@@ -34,8 +39,6 @@ public class LoginForm extends javax.swing.JFrame {
     private final Map<String, Boolean> lockoutFlags = new HashMap<>();
     private static final int MAX_ATTEMPTS = 3;
     private static final int LOCKOUT_DURATION_MS = 60_000; // 1 minute for testing; use 300_000 for 5 mins
-
-    
     private final Map<String, String> credentials = new HashMap<>();
 
     public LoginForm() {
@@ -66,6 +69,27 @@ public class LoginForm extends javax.swing.JFrame {
             }
         });
 
+        // Force Employee ID field to accept numbers only
+        ((AbstractDocument) jTextField1.getDocument()).setDocumentFilter(new DocumentFilter() {
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
+                if (string.matches("\\d+")) {
+                    super.insertString(fb, offset, string, attr);
+                } // else ignore non-digit input
+            }
+
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
+                if (text.matches("\\d*")) { // allow empty or digits
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+
+            @Override
+            public void remove(FilterBypass fb, int offset, int length) throws BadLocationException {
+                super.remove(fb, offset, length);
+            }
+        });
         // Placeholders for password
         jPasswordField1.setForeground(Color.GRAY);
         jPasswordField1.setEchoChar((char)0);
@@ -127,7 +151,7 @@ public class LoginForm extends javax.swing.JFrame {
         credentials.clear();
         try (
             BufferedReader br = new BufferedReader(
-                new InputStreamReader(getClass().getResourceAsStream("/com/gui/LoginCredentials.csv")))
+                new InputStreamReader(getClass().getResourceAsStream("/com/csv/LoginCredentials.csv")))
         ) {
             String line = br.readLine(); // header
             if (line != null && line.startsWith("\uFEFF")) line = line.substring(1);
@@ -149,7 +173,7 @@ public class LoginForm extends javax.swing.JFrame {
 
     /** Reads employee info from /com/payroll/EmployeeData.csv and returns User */
     private User getUserFromEmployeeData(String username) {
-        String path = "/com/payroll/EmployeeData.csv";
+        String path = "/com/csv/EmployeeData.csv";
         try (
             BufferedReader br = new BufferedReader(
                 new InputStreamReader(getClass().getResourceAsStream(path)))
@@ -174,6 +198,7 @@ public class LoginForm extends javax.swing.JFrame {
         return null;
     }
 
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -298,11 +323,20 @@ public class LoginForm extends javax.swing.JFrame {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         // TODO add your handling code here:
+        // Validate Employee ID first
+        String user = jTextField1.getText().trim();
+
+        if (user.isEmpty() || !user.matches("\\d+")) {
+            JOptionPane.showMessageDialog(this,
+                "Enter correct Employee User ID (numbers only).",
+                "Invalid Employee ID",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         // show spinner
         jProgressBar1.setVisible(true);
         jProgressBar1.setIndeterminate(true);
 
-        String user = jTextField1.getText().trim();
         String pass = new String(jPasswordField1.getPassword());
 
         int attempts = failedAttempts.getOrDefault(user, 0);

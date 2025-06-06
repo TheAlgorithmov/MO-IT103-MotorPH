@@ -4,7 +4,7 @@
  */
 /**
  *
- * @author AtlasPrimE
+ * @author ongoj
  */
 package com.gui;
 

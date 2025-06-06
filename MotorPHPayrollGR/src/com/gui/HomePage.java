@@ -24,11 +24,17 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
-import java.text.ParseException;
+import java.time.LocalDate;
+import java.time.DayOfWeek;
+import java.time.Month;
+import java.time.format.DateTimeFormatter;
+import javax.swing.*;
+import java.awt.*;
+import java.util.Date;
 
 /**
  *
- * @author AtlasPrimE
+ * @author ongoj
  */
 public class HomePage extends javax.swing.JFrame {
 
@@ -38,9 +44,7 @@ public class HomePage extends javax.swing.JFrame {
     private String clockInTime = null;
     
     //View Attemdance Panel
-    private JPanel dateRangePanel;
-    private com.toedter.calendar.JDateChooser jDateChooser1;
-    private com.toedter.calendar.JDateChooser jDateChooser2;
+
     
     // Constructor: receive User info
     public HomePage(User user) {
@@ -55,18 +59,6 @@ public class HomePage extends javax.swing.JFrame {
         SwingUtilities.invokeLater(() -> setProfileImage(jLabel5, currentUser.getuEmpId()));
         setUserInfo();
         startClock();
-        
-        // Initialize Panel & DateChoosers
-        dateRangePanel = new JPanel();
-        dateRangePanel.setLayout(new GridLayout(3, 2)); // 3 rows, 2 columns
-
-        dateRangePanel.add(new JLabel("From:"));
-        jDateChooser1 = new com.toedter.calendar.JDateChooser();
-        dateRangePanel.add(jDateChooser1);
-
-        dateRangePanel.add(new JLabel("To:"));
-        jDateChooser2 = new com.toedter.calendar.JDateChooser();
-        dateRangePanel.add(jDateChooser2);
         
     }
     
@@ -178,37 +170,45 @@ public class HomePage extends javax.swing.JFrame {
         }
         
         // Only reads EmployeeTimeEntries.csv and writes a new file in user's chosen folder
-        private void generateAttendanceReport(File directory, Date from, Date to) {
-            String empId = currentUser.getuEmpId();
-            SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy");
-            SimpleDateFormat fileDateFormat = new SimpleDateFormat("yyyy.MM.dd");
-            SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a");
+    private void generateAttendanceReport(File directory, Date from, Date to) {
+        String empId = currentUser.getuEmpId();
+        SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy");
+        SimpleDateFormat fileDateFormat = new SimpleDateFormat("yyyy.MM.dd");
+        SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a");
 
-            String fromStr = (from != null) ? fileDateFormat.format(from) : "start";
-            String toStr = (to != null) ? fileDateFormat.format(to) : "end";
+        String fromStr = (from != null) ? fileDateFormat.format(from) : "start";
+        String toStr = (to != null) ? fileDateFormat.format(to) : "end";
 
-            // Filename format: EmpID_yyyy.mm.dd_yyyy.mm.dd.csv
-            String fileName = empId + "_" + fromStr + "_" + toStr + ".csv";
-            File csvFile = new File(directory, fileName);
+        // Filename format: EmpID_yyyy.mm.dd_yyyy.mm.dd.csv
+        String fileName = empId + "_" + fromStr + "_" + toStr + ".csv";
+        File csvFile = new File(directory, fileName);
 
-            try (BufferedReader br = new BufferedReader(new FileReader("src/com/payroll/EmployeeTimeEntries.csv"));
-                 PrintWriter out = new PrintWriter(new FileWriter(csvFile))) {
+        try {
+            String userCsvFile = "src/com/csv/DTR/" + empId + ".csv";
+            BufferedReader br = new BufferedReader(new FileReader(userCsvFile));
+            PrintWriter out = new PrintWriter(new FileWriter(csvFile));
 
-                // Write header
-                out.println("Date,Clock In,Clock Out,Duration");
+            // Write header
+            out.println("Date,Clock In,Clock Out,Duration");
 
-                String line;
-                boolean hasData = false;
-                while ((line = br.readLine()) != null) {
-                    String[] parts = line.split(",");
-                    if (parts.length >= 5 && parts[0].equals(empId)) {
-                        Date entryDate = sdf.parse(parts[1]);
-                        boolean inRange = (from == null || !entryDate.before(from)) &&
-                                          (to == null || !entryDate.after(to));
-                        if (inRange) {
-                            String clockIn = parts[2].trim();
-                            String clockOut = parts[3].trim();
-                            String durationStr = "";
+            String line;
+            boolean isFirstLine = true;
+            boolean hasData = false;
+
+            while ((line = br.readLine()) != null) {
+                if (isFirstLine) { isFirstLine = false; continue; } // skip header
+                String[] parts = line.split(",");
+                if (parts.length >= 5 && parts[0].equals(empId)) {
+                    Date entryDate = sdf.parse(parts[1]);
+                    boolean inRange = (from == null || !entryDate.before(from)) &&
+                                      (to == null || !entryDate.after(to));
+                    if (inRange) {
+                        String clockIn = parts[2].trim();
+                        String clockOut = parts[3].trim();
+                        String durationStr = parts[4].trim(); // Already computed in DTR CSV
+
+                        // Fallback: if empty or "Error", recompute:
+                        if (durationStr.isEmpty() || durationStr.equalsIgnoreCase("Error")) {
                             try {
                                 Date clockInDate = timeFormat.parse(clockIn);
                                 Date clockOutDate = timeFormat.parse(clockOut);
@@ -221,21 +221,26 @@ public class HomePage extends javax.swing.JFrame {
                             } catch (Exception ex) {
                                 durationStr = "Error";
                             }
-                            out.println(parts[1] + "," + clockIn + "," + clockOut + "," + durationStr);
-                            hasData = true;
                         }
+
+                        out.println(parts[1] + "," + clockIn + "," + clockOut + "," + durationStr);
+                        hasData = true;
                     }
                 }
-                if (hasData) {
-                    JOptionPane.showMessageDialog(this, "Report saved to:\n" + csvFile.getAbsolutePath());
-                } else {
-                    JOptionPane.showMessageDialog(this, "No records found in the selected date range.");
-                    csvFile.delete(); // Remove empty file
-                }
-            } catch (Exception e) {
-                JOptionPane.showMessageDialog(this, "Error generating report: " + e.getMessage());
             }
+            br.close();
+            out.close();
+
+            if (hasData) {
+                JOptionPane.showMessageDialog(this, "Report saved to:\n" + csvFile.getAbsolutePath());
+            } else {
+                JOptionPane.showMessageDialog(this, "No records found in the selected date range.");
+                csvFile.delete(); // Remove empty file
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error generating report: " + e.getMessage());
         }
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -493,29 +498,72 @@ public class HomePage extends javax.swing.JFrame {
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
         // Clock Out Button
         if (clockInTime == null) {
-        JOptionPane.showMessageDialog(this, "You need to clock in first!");
-        return;
-    }
+            JOptionPane.showMessageDialog(this, "You need to clock in first!");
+            return;
+        }
+
         String clockOutTime = getCurrentManilaTime();
-        // Save attendance record to CSV in the format: empID,Date,ClockinTime,ClockoutTime,EmployeeName
-            try (FileWriter fw = new FileWriter("src/com/payroll/EmployeeTimeEntries.csv", true);
-             BufferedWriter bw = new BufferedWriter(fw);
-             PrintWriter out = new PrintWriter(bw)) {
+        String userCsvFile = "src/com/csv/DTR/" + currentUser.getuEmpId() + ".csv";
+        SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a");
 
-            // Write: empId, date, clockIn, clockOut, firstName lastName
-            out.println(currentUser.getuEmpId() + "," +
-                        clockInDate + "," +
-                        clockInTime + "," +
-                        clockOutTime + "," +
-                        currentUser.getuFirstName() + " " + currentUser.getuLastName());
+        try {
+            // Compute duration between clock-in and clock-out
+            Date clockInDateObj = timeFormat.parse(clockInTime);
+            Date clockOutDateObj = timeFormat.parse(clockOutTime);
 
-            // Clear clock in
-            clockInTime = null;
-            clockInDate = null;
-            JOptionPane.showMessageDialog(this, "Time Out recorded and attendance saved!");
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Error saving attendance: " + e.getMessage());
-    }
+            long durationMs = clockOutDateObj.getTime() - clockInDateObj.getTime();
+            if (durationMs < 0) {
+                durationMs += 24 * 60 * 60 * 1000; // Handle overnight clock out
+            }
+
+            long durationMinutes = durationMs / (60 * 1000);
+            long hours = durationMinutes / 60;
+            long minutes = durationMinutes % 60;
+
+            // If less than 8 hours, ask for confirmation
+            if (durationMinutes < 480) { // 480 minutes = 8 hours
+                int confirm = JOptionPane.showConfirmDialog(
+                    this,
+                    "You have worked less than 8 hours (" + hours + "h " + minutes + "m).\nAre you sure you want to clock out?",
+                    "Confirm Early Clock Out",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE
+                );
+
+                if (confirm != JOptionPane.YES_OPTION) {
+                    // Cancel Clock Out
+                    return;
+                }
+            }
+
+            // Save to CSV
+            File file = new File(userCsvFile);
+            boolean isNewFile = !file.exists();
+
+            try (FileWriter fw = new FileWriter(userCsvFile, true);
+                 BufferedWriter bw = new BufferedWriter(fw);
+                 PrintWriter out = new PrintWriter(bw)) {
+
+                if (isNewFile) {
+                    out.println("EmpID,Log Date,Clock In,Clock Out,Duration");
+                }
+
+                String durationStr = hours + "h " + minutes + "m";
+
+                out.println(currentUser.getuEmpId() + "," +
+                            clockInDate + "," +
+                            clockInTime + "," +
+                            clockOutTime + "," +
+                            durationStr);
+
+                // Clear clock in
+                clockInTime = null;
+                clockInDate = null;
+                JOptionPane.showMessageDialog(this, "Time Out recorded and attendance saved!");
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error processing Clock Out: " + e.getMessage());
+        }
     }//GEN-LAST:event_jButton5ActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
@@ -535,115 +583,164 @@ public class HomePage extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton3ActionPerformed
 
     private void jButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton7ActionPerformed
-        int result = JOptionPane.showConfirmDialog(
-            this,
-            dateRangePanel,
-            "Please select date range.",
-            JOptionPane.OK_CANCEL_OPTION,
-            JOptionPane.PLAIN_MESSAGE
-        );
+        DateRangeDialog dateDialog = new DateRangeDialog(this);
+        dateDialog.setVisible(true);
 
-        if (result != JOptionPane.OK_OPTION) {
-            // User cancelled or closed dialog
+        if (!dateDialog.isConfirmed()) {
+            return; // User cancelled
+        }
+
+        Date fromDate = dateDialog.getFromDate();
+        Date toDate = dateDialog.getToDate();
+
+        if (fromDate == null || toDate == null) {
+            JOptionPane.showMessageDialog(this, "Please select a valid date range.");
             return;
         }
 
-        Date from = jDateChooser1.getDate();
-        Date to = jDateChooser2.getDate();
-        SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy");
-        SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a");
-        // Date validation: Make sure 'from' is not after 'to'
-        if (from != null && to != null && from.after(to)) {
-            JOptionPane.showMessageDialog(this, "Invalid date range!\n'From' date must not be after 'To' date.\nPlease try again.", "Date Range Error", JOptionPane.ERROR_MESSAGE);
-            // Recursively call the handler to prompt again, do NOT exit or reset to main
-            jButton7ActionPerformed(evt);
+        if (fromDate.after(toDate)) {
+            JOptionPane.showMessageDialog(this, "Invalid date range!\n'From' date must not be after 'To' date.", "Date Range Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        
-        StringBuilder records = new StringBuilder("Date\tClock In\tClock Out\tDuration\n\n");
-        boolean found = false;
-        long totalMinutes = 0;
 
-        try (BufferedReader br = new BufferedReader(new FileReader("src/com/payroll/EmployeeTimeEntries.csv"))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] parts = line.split(",");
-                // Format: empId, date, clockIn, clockOut, employeeName
-                if (parts.length >= 5 && parts[0].equals(currentUser.getuEmpId())) {
-                    Date entryDate = sdf.parse(parts[1]);
-                    boolean inRange = (from == null || !entryDate.before(from)) &&
-                                      (to == null || !entryDate.after(to));
-                    if (inRange) {
-                        String clockIn = parts[2].trim();
-                        String clockOut = parts[3].trim();
+        LocalDate startDate = fromDate.toInstant().atZone(TimeZone.getDefault().toZoneId()).toLocalDate();
+        LocalDate endDate = toDate.toInstant().atZone(TimeZone.getDefault().toZoneId()).toLocalDate();
 
-                        try {
-                            Date clockInDate = timeFormat.parse(clockIn);
-                            Date clockOutDate = timeFormat.parse(clockOut);
-                            long durationMs = clockOutDate.getTime() - clockInDate.getTime();
-                            if (durationMs < 0) durationMs += 24 * 60 * 60 * 1000; // Overnight fix
-                            long diffMinutes = durationMs / (60 * 1000);
-                            totalMinutes += diffMinutes;
-                            long hours = diffMinutes / 60;
-                            long minutes = diffMinutes % 60;
-                            String durationStr = hours + "h " + minutes + "m";
-                            records.append(parts[1]).append("\t")
-                                   .append(clockIn).append("\t")
-                                   .append(clockOut).append("\t")
-                                   .append(durationStr).append("\n");
-                            found = true;
-                        } catch (Exception ex) {
-                            // If parsing fails, just skip duration for that day
-                            records.append(parts[1]).append("\t")
-                                   .append(clockIn).append("\t")
-                                   .append(clockOut).append("\t")
-                                   .append("Error\n");
-                        }
+            // Now prepare attendance map
+            Map<String, String[]> attendanceMap = new HashMap<>();
+            SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy");
+
+            try {
+                String userCsvFile = "src/com/csv/DTR/" + currentUser.getuEmpId() + ".csv";
+                BufferedReader br = new BufferedReader(new FileReader(userCsvFile));
+
+                String line;
+                boolean isFirstLine = true;
+                while ((line = br.readLine()) != null) {
+                    if (isFirstLine) { isFirstLine = false; continue; } // Skip header
+                    String[] entry = line.split(",");
+                    if (entry.length >= 4 && entry[0].equals(currentUser.getuEmpId())) {
+                        String logDate = entry[1].trim();
+                        String clockIn = entry[2].trim();
+                        String clockOut = entry[3].trim();
+                        String duration = (entry.length >= 5) ? entry[4].trim() : "";
+                        attendanceMap.put(logDate, new String[]{clockIn, clockOut, duration});
                     }
                 }
+                br.close();
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, "Error reading attendance: " + e.getMessage());
+                return;
             }
-        } catch (Exception e) {
-            records.append("Error reading attendance: ").append(e.getMessage());
-        }
 
-        // Add total worked hours at the bottom
-        long totalHours = totalMinutes / 60;
-        long totalMins = totalMinutes % 60;
-        records.append("\nTotal Worked Hours: ").append(totalHours).append("h ").append(totalMins).append("m\n");
+            // Now loop from startDate to endDate
+            StringBuilder records = new StringBuilder("Date\tClock In\tClock Out\tDuration\tStatus\n\n");
+            long totalMinutes = 0;
 
-        if (!found) {
-            JOptionPane.showMessageDialog(this, "No attendance records found.");
-        } else {
+            LocalDate currentDay = startDate;
+            while (!currentDay.isAfter(endDate)) {
+                DayOfWeek dayOfWeek = currentDay.getDayOfWeek();
+
+                // Skip Weekend
+                if (dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY) {
+                    String dateStr = (currentDay.getMonthValue()) + "/" + currentDay.getDayOfMonth() + "/" + currentDay.getYear();
+                    String clockIn = "";
+                    String clockOut = "";
+                    String duration = "";
+                    String status = "";
+
+                    if (attendanceMap.containsKey(dateStr)) {
+                        String[] entry = attendanceMap.get(dateStr);
+                        clockIn = entry[0];
+                        clockOut = entry[1];
+
+                            // Compute Duration and determine status
+                            try {
+                                SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a");
+                                Date clockInDate = timeFormat.parse(clockIn);
+                                Date clockOutDate = timeFormat.parse(clockOut);
+
+                                // Compute duration
+                                long durationMs = clockOutDate.getTime() - clockInDate.getTime();
+                                if (durationMs < 0) durationMs += 24 * 60 * 60 * 1000; // Overnight fix
+
+                                long diffMinutes = durationMs / (60 * 1000);
+                                long hours = diffMinutes / 60;
+                                long minutes = diffMinutes % 60;
+
+                                duration = hours + "h " + minutes + "m";
+
+                            // Determine status (Late / Present / Undertime)
+                            Date lateThreshold = timeFormat.parse("8:45 AM");
+
+                            if (clockInDate.after(lateThreshold)) {
+                                status = "Late";
+                            } else {
+                                status = "Present";
+                            }
+
+                            if (diffMinutes < 480) { // Less than 8 hrs → Undertime
+                                status = "Undertime";
+                            }
+
+                            // Accumulate total worked minutes
+                            totalMinutes += diffMinutes;
+                        } catch (Exception ex) {
+                            duration = "Error";
+                            status = "Error";
+                        }
+                    } else {
+                        // No entry → check if day is past or future
+                        if (currentDay.isBefore(LocalDate.now())) {
+                            status = "Absent";
+                        } else {
+                            status = ""; // Future → leave blank
+                        }
+                    }
+
+                    // Append row
+                    records.append(dateStr).append("\t")
+                           .append(clockIn).append("\t")
+                           .append(clockOut).append("\t")
+                           .append(duration).append("\t")
+                           .append(status).append("\n");
+                }
+
+                currentDay = currentDay.plusDays(1);
+            }
+
+            // Total worked time
+            long totalHours = totalMinutes / 60;
+            long totalMins = totalMinutes % 60;
+            records.append("\nTotal Worked Hours: ").append(totalHours).append("h ").append(totalMins).append("m\n");
+
+            // Show Attendance Log
             JTextArea area = new JTextArea(records.toString());
             area.setEditable(false);
             JScrollPane scrollPane = new JScrollPane(area);
-            scrollPane.setPreferredSize(new java.awt.Dimension(500, 350));
+            scrollPane.setPreferredSize(new java.awt.Dimension(600, 400));
             JOptionPane.showMessageDialog(this, scrollPane, "Attendance Log", JOptionPane.INFORMATION_MESSAGE);
-        }
 
-        // Prompt for export
-        int exportOption = JOptionPane.showConfirmDialog(
-            this,
-            "Would you like to export the result?",
-            "Export Attendance Report",
-            JOptionPane.YES_NO_OPTION
-        );
+            // Prompt to export
+            int exportOption = JOptionPane.showConfirmDialog(
+                this,
+                "Would you like to export the result?",
+                "Export Attendance Report",
+                JOptionPane.YES_NO_OPTION
+            );
 
-        if (exportOption == JOptionPane.YES_OPTION) {
-            // Let the user choose where to save
-            JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-            fileChooser.setDialogTitle("Select Folder to Save Report");
+            if (exportOption == JOptionPane.YES_OPTION) {
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+                fileChooser.setDialogTitle("Select Folder to Save Report");
 
-            int chooserResult = fileChooser.showSaveDialog(this);
-            if (chooserResult == JFileChooser.APPROVE_OPTION) {
-                File selectedDir = fileChooser.getSelectedFile();
-                // Call your export method, passing the chosen folder and dates
-                generateAttendanceReport(selectedDir, from, to);
+                int chooserResult = fileChooser.showSaveDialog(this);
+                if (chooserResult == JFileChooser.APPROVE_OPTION) {
+                    File selectedDir = fileChooser.getSelectedFile();
+                    generateAttendanceReport(selectedDir, Date.from(startDate.atStartOfDay(TimeZone.getDefault().toZoneId()).toInstant()),
+                                                      Date.from(endDate.atStartOfDay(TimeZone.getDefault().toZoneId()).toInstant()));
+                }
             }
-        } else {
-            // Do nothing, just return to HomePage
-        }
     }//GEN-LAST:event_jButton7ActionPerformed
 
     /**
@@ -812,8 +909,6 @@ public class HomePage extends javax.swing.JFrame {
             jLabel4.setLabelFor(jTextField1);
             jLabel4.setToolTipText("Format: FLastNameEmployeeNumber (ex. JRizal00001) ");
             jLabel5.setIcon(new ImageIcon(getClass().getResource("/com/LoginUI/images/password.png"))); // NOI18N
-            jLabel5.setLabelFor(jPasswordField1);
-            jLabel5.setToolTipText("Format: FLNumberBirthYear! (ex. JR100351861!) ");
             jPasswordField1.setHorizontalAlignment(JTextField.CENTER);
             jPasswordField1.setToolTipText("");
             jTextField1.setHorizontalAlignment(JTextField.CENTER);

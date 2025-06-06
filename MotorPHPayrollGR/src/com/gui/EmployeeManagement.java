@@ -6,7 +6,7 @@ package com.gui;
 
 /**
  *
- * @author AtlasPrimE
+ * @author ongoj
  */
 public class EmployeeManagement {
 

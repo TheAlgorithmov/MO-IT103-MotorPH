@@ -4,7 +4,7 @@
  */
 /**
  *
- * @author AtlasPrimE & Miles
+ * @author ongoj & Miles
  */
 package com.gui;
 
@@ -120,8 +120,9 @@ import com.gui.PaySlip;
      * Dynamically generates pay periods based on the user's time entries in the CSV.
      * Only periods for which the user has a log are shown.
      */
-        private JComboBox<String> createPayPeriodComboBoxFromCSV() {
-        String csvFile = "src/com/payroll/EmployeeTimeEntries.csv";
+    private JComboBox<String> createPayPeriodComboBoxFromCSV() {
+        // Load only this employee's DTR/EmpID.csv
+        String csvFile = "src/com/csv/DTR/" + currentUser.getuEmpId() + ".csv";
         Set<String> payPeriods = new LinkedHashSet<>(); // Unique, ordered set
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("M/d/yyyy"); // Adjust to CSV format
 
@@ -130,10 +131,9 @@ import com.gui.PaySlip;
             boolean isFirstLine = true;
             while ((nextLine = reader.readNext()) != null) {
                 if (isFirstLine) { isFirstLine = false; continue; } // skip header
-                String empId = nextLine[0].trim();      // Parses empID
-                String logDateStr = nextLine[1].trim(); // Parses Logged Date
 
-                if (!empId.equals(currentUser.getuEmpId())) continue; // filter for current user
+                // Your DTR CSV is: EmpID, Log Date, Log In, Log Out, Duration
+                String logDateStr = nextLine[1].trim(); // Column 2 = Log Date
 
                 LocalDate logDate = LocalDate.parse(logDateStr, dateFormatter);
                 int day = logDate.getDayOfMonth();
@@ -141,7 +141,7 @@ import com.gui.PaySlip;
                 String monthName = ym.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH);
                 int year = ym.getYear();
                 int lastDay = ym.lengthOfMonth();
-                
+
                 String label, payday;
                 if (day <= 15) {
                     label = "1-15 " + monthName + " " + year;
@@ -163,8 +163,6 @@ import com.gui.PaySlip;
 
         return new JComboBox<>(payPeriods.toArray(new String[0]));
     }
-
-
     /**
      * Validates the pay period selection and computes the exact date range to be used for payroll.
      * Parses the dropdown label (e.g., "1-15 June 2025 (Payday: June 30)").

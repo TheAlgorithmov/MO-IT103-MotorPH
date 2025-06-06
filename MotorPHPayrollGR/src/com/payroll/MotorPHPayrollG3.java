@@ -18,29 +18,33 @@ import javax.swing.JOptionPane;
         public static Object[] runPayrollSearch(LocalDate startDate, LocalDate endDate, String inputEmpId) {
 
             // Load Employee Dataa
-            Map<String, EmployeeData> employees = EmployeeData.loadEmployeeData("src/com/payroll/EmployeeData.csv");
+            Map<String, EmployeeData> employees = EmployeeData.loadEmployeeData("src/com/csv/EmployeeData.csv");
             if (employees.isEmpty()) {
                 System.err.println("No employees loaded. Exiting...");
                 return null;
             }
 
             // Load Holiday Calendar BEFORE anything else
-            HolidayCalendar.loadHolidaysFromCSV("src/com/payroll/HolidayCalendar.csv");
+            HolidayCalendar.loadHolidaysFromCSV("src/com/csv/HolidayCalendar.csv");
 
             // Load De Minimis Benefits
-            Map<String, DeMinimisBenefits> benefits = DeMinimisBenefits.loadBenefits("src/com/payroll/EmployeeData.csv");
+            Map<String, DeMinimisBenefits> benefits = DeMinimisBenefits.loadBenefits("src/com/csv/EmployeeData.csv");
 
-            // Load Time Entries
-            List<TimeEntry> timeEntries = TimeEntry.loadTimeEntries("src/com/payroll/EmployeeTimeEntries.csv");
+            // Load Time Entries for this employee only (NEW)
+            String timeEntryFilePath = "src/com/csv/DTR/" + inputEmpId + ".csv";
+            List<TimeEntry> timeEntries = TimeEntry.loadTimeEntries(timeEntryFilePath);
+
             if (timeEntries.isEmpty()) {
-                System.err.println("No time entries loaded. Exiting...");
+                System.err.println("No time entries loaded for employee " + inputEmpId + ". Exiting...");
+                showErrorDialog("No time entries found for Employee ID: " + inputEmpId);
                 return null;
             }
 
-            // Filter time entries based on user input
+            // Filter time entries by date range
             List<TimeEntry> filteredTimeEntries = TimeEntry.filterTimeEntriesByDate(timeEntries, startDate, endDate);
             if (filteredTimeEntries.isEmpty()) {
                 System.out.println("No time entries found within the specified period.");
+                showErrorDialog("No time entries found for Employee ID: " + inputEmpId + " within selected date range.");
                 return null;
             }
 
