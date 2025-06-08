@@ -64,62 +64,92 @@ public class PaySlip extends JPanel {
 
         add(headerPanel, BorderLayout.NORTH);
 
-        // INFO & BODY: All centered
+        // Main content panel
         JPanel contentPanel = new JPanel();
         contentPanel.setOpaque(false);
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setBorder(new EmptyBorder(15, 50, 15, 50));
 
-        // Employee Details
+        // SECTION 1 - Pay Details (top info)
         contentPanel.add(makeInfoRow("Pay Date:", payDate.format(fmt)));
         contentPanel.add(makeInfoRow("Pay Period:", startDate.format(fmt) + " - " + endDate.format(fmt)));
         contentPanel.add(Box.createVerticalStrut(12));
         contentPanel.add(makeInfoRow("Employee ID:", String.valueOf(payrollReport[0])));
-        
-        // Name formatting: "Lastname, Firstname" (split if possible)
+
+        // Name formatting
         String empName = String.valueOf(payrollReport[1]);
         String[] nameParts = empName.trim().split("\\s+");
         String formattedName = empName;
-        if (nameParts.length >= 2) {formattedName = nameParts[nameParts.length-1] + ", " + nameParts[0];}
+        if (nameParts.length >= 2) {
+            formattedName = nameParts[nameParts.length-1] + ", " + nameParts[0];
+        }
         contentPanel.add(makeInfoRow("Employee Name:", formattedName));
         contentPanel.add(makeInfoRow("Position:", String.valueOf(payrollReport[3])));
         contentPanel.add(makeInfoRow("Status:", String.valueOf(payrollReport[4])));
         contentPanel.add(Box.createVerticalStrut(12));
-        JSeparator sep = new JSeparator();
-        sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 2));
-        contentPanel.add(sep);
 
-        // Payroll Details
+        // --- EARNINGS SECTION ---
+        JPanel earningsPanel = new JPanel();
+        earningsPanel.setLayout(new BoxLayout(earningsPanel, BoxLayout.Y_AXIS));
+        earningsPanel.setOpaque(false);
+        earningsPanel.setBorder(BorderFactory.createTitledBorder("Earnings"));
+
+        earningsPanel.add(makePayRow("Worked Hours", payrollReport[8], df));
+        earningsPanel.add(makePayRow("Overtime Hours", payrollReport[9], df));
+        earningsPanel.add(makeSectionHeader("Gross Income", payrollReport[10], df));
+
+        contentPanel.add(earningsPanel);
         contentPanel.add(Box.createVerticalStrut(10));
-        contentPanel.add(makePayRow("Worked Hours", payrollReport[8], df));
-        contentPanel.add(makePayRow("Overtime Hours", payrollReport[9], df));
-        contentPanel.add(Box.createVerticalStrut(12));
-        contentPanel.add(makeSectionHeader("GROSS INCOME", payrollReport[10], df));
-        contentPanel.add(Box.createVerticalStrut(7));
-        contentPanel.add(makeSectionSubHeader("GOVERNMENT DEDUCTIONS"));
-        contentPanel.add(makePayRow("SSS Contribution", payrollReport[11], df));
-        contentPanel.add(makePayRow("Pag-IBIG Contribution", payrollReport[12], df));
-        contentPanel.add(makePayRow("PhilHealth Contribution", payrollReport[13], df));
-        contentPanel.add(makePayRow("Taxable Income", payrollReport[14], df));
-        contentPanel.add(makePayRow("BIR Withholding", payrollReport[15], df));
-        contentPanel.add(makePayRow("Late Deductions", payrollReport[16], df));
-        contentPanel.add(Box.createVerticalStrut(4));
-        contentPanel.add(makeSectionHeader("TOTAL DEDUCTIONS", payrollReport[17], df));
-        contentPanel.add(Box.createVerticalStrut(8));
-        contentPanel.add(makeSectionSubHeader("DE MINIMIS BENEFITS"));
-        contentPanel.add(makePayRow("Rice Subsidy", payrollReport[18], df));
-        contentPanel.add(makePayRow("Phone Allowance", payrollReport[19], df));
-        contentPanel.add(makePayRow("Clothing Allowance", payrollReport[20], df));
+
+        // --- DEDUCTIONS SECTION ---
+        JPanel deductionsPanel = new JPanel();
+        deductionsPanel.setLayout(new BoxLayout(deductionsPanel, BoxLayout.Y_AXIS));
+        deductionsPanel.setOpaque(false);
+        deductionsPanel.setBorder(BorderFactory.createTitledBorder("Deductions"));
+
+        deductionsPanel.add(makeSectionSubHeader("Government Deductions"));
+        deductionsPanel.add(makePayRow("SSS Contribution", payrollReport[11], df));
+        deductionsPanel.add(makePayRow("Pag-IBIG Contribution", payrollReport[12], df));
+        deductionsPanel.add(makePayRow("PhilHealth Contribution", payrollReport[13], df));
+
+        deductionsPanel.add(makePayRow("Taxable Income", payrollReport[14], df));
+        deductionsPanel.add(makePayRow("BIR Withholding", payrollReport[15], df));
+        deductionsPanel.add(makePayRow("Late Deductions", payrollReport[16], df));
+        deductionsPanel.add(makeSectionHeader("Total Deductions", payrollReport[17], df));
+
+        contentPanel.add(deductionsPanel);
         contentPanel.add(Box.createVerticalStrut(10));
-        contentPanel.add(makeSectionHeader("NET INCOME", payrollReport[21], df));
+
+        // --- DE MINIMIS BENEFITS SECTION ---
+        JPanel deminimisPanel = new JPanel();
+        deminimisPanel.setLayout(new BoxLayout(deminimisPanel, BoxLayout.Y_AXIS));
+        deminimisPanel.setOpaque(false);
+        deminimisPanel.setBorder(BorderFactory.createTitledBorder("De Minimis Benefits"));
+
+        deminimisPanel.add(makePayRow("Rice Subsidy", payrollReport[18], df));
+        deminimisPanel.add(makePayRow("Phone Allowance", payrollReport[19], df));
+        deminimisPanel.add(makePayRow("Clothing Allowance", payrollReport[20], df));
+
+        contentPanel.add(deminimisPanel);
+        contentPanel.add(Box.createVerticalStrut(10));
+
+        // --- NET INCOME SECTION ---
+        JPanel netIncomePanel = new JPanel();
+        netIncomePanel.setLayout(new BoxLayout(netIncomePanel, BoxLayout.Y_AXIS));
+        netIncomePanel.setOpaque(false);
+        netIncomePanel.setBorder(BorderFactory.createTitledBorder("Net Income"));
+
+        netIncomePanel.add(makeSectionHeader("Net Income", payrollReport[21], df));
+
+        contentPanel.add(netIncomePanel);
         contentPanel.add(Box.createVerticalStrut(20));
 
         // Center contentPanel horizontally
         JPanel centerWrap = new JPanel(new FlowLayout(FlowLayout.CENTER));
         centerWrap.setOpaque(false);
         centerWrap.add(contentPanel);
-        
-        // Make content scrollable
+
+        // Scroll pane
         JScrollPane scrollPane = new JScrollPane(centerWrap);
         scrollPane.setBorder(null);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
@@ -128,7 +158,7 @@ public class PaySlip extends JPanel {
 
         add(scrollPane, BorderLayout.CENTER);
 
-        // Export to PDF button at bottom
+        // Export button
         exportBtn = new JButton("Export to PDF");
         exportBtn.setFont(new Font("Arial", Font.PLAIN, 16));
         exportBtn.addActionListener(e -> exportToPDF());

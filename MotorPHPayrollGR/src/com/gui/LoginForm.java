@@ -23,7 +23,12 @@ import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
 import javax.swing.text.DocumentFilter.FilterBypass;
-
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.Reader;
 
 /**
  * LoginForm - JFrame login UI with username/password, placeholders, spinner,
@@ -175,29 +180,43 @@ public class LoginForm extends javax.swing.JFrame {
     private User getUserFromEmployeeData(String username) {
         String path = "/com/csv/EmployeeData.csv";
         try (
-            BufferedReader br = new BufferedReader(
-                new InputStreamReader(getClass().getResourceAsStream(path)))
+            InputStream is = getClass().getResourceAsStream(path);
+            Reader reader = new InputStreamReader(is);
+            CSVReader csvReader = new CSVReader(reader)
         ) {
-            String line = br.readLine(); // header
-            while ((line = br.readLine()) != null) {
-                String[] parts = line.split(",");
-                // Adjust indices as needed for your actual file structure!
-                if (parts.length >= 6 && parts[0].trim().equals(username)) {
-                    String empId = parts[0].trim();
-                    String firstName = parts[1].trim();
-                    String lastName = parts[2].trim();
-                    String dob = parts[3].trim();
-                    String position = parts[9].trim();
-                    String status = parts[8].trim();
-                    return new User(empId, firstName, lastName, dob, position, status);
-                }
-            }
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Error reading user info:\n" + ex.getMessage(), "File Error", JOptionPane.ERROR_MESSAGE);
-        }
-        return null;
-    }
+            String[] parts;
+            csvReader.readNext(); // skip header
 
+            while ((parts = csvReader.readNext()) != null) {
+                if (parts.length >= 19 && parts[0].trim().equals(username)) {
+                    return new User(
+                        parts[0].trim(), // EmpID
+                        parts[1].trim(), // First Name
+                        parts[2].trim(), // Last Name
+                        parts[3].trim(), // Birthday
+                        parts[9].trim(), // Position
+                        parts[8].trim(), // Status
+                        parts[11].trim(), // Phone Number
+                        parts[16].trim(), // Immediate Supervisor
+                        parts[10].trim(), // Basic Salary
+                        parts[4].trim(), // Hourly Rate
+                        parts[5].trim(), // Rice Subsidy
+                        parts[6].trim(), // Phone Allowance
+                        parts[7].trim(), // Clothing Allowance
+                        parts[17].trim(), // Gross Semi-monthly Rate
+                        parts[12].trim(), // SSS #
+                        parts[13].trim(), // PhilHealth #
+                        parts[14].trim(), // TIN #
+                        parts[15].trim(), // Pag-ibig #
+                        parts[18].trim()  // Address
+                    );
+            }
+        }
+    } catch (Exception ex) {
+        JOptionPane.showMessageDialog(this, "Error reading user info:\n" + ex.getMessage(), "File Error", JOptionPane.ERROR_MESSAGE);
+    }
+    return null;
+}
     
     /**
      * This method is called from within the constructor to initialize the form.
@@ -470,4 +489,5 @@ public class LoginForm extends javax.swing.JFrame {
     private javax.swing.JProgressBar jProgressBar1;
     private javax.swing.JTextField jTextField1;
     // End of variables declaration//GEN-END:variables
+
 }

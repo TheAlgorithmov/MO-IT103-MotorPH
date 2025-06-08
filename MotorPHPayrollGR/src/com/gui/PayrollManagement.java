@@ -113,6 +113,14 @@ import com.gui.PaySlip;
             });
 
             setVisible(true);
+            
+            JButton btnBack = new JButton("Back to Dashboard");
+            btnBack.addActionListener(e -> {
+                JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+                topFrame.setContentPane(new EmployeeManagement(currentUser));
+                topFrame.revalidate();
+                topFrame.repaint();
+            });
 
     }
 
@@ -134,7 +142,9 @@ import com.gui.PaySlip;
 
                 // Your DTR CSV is: EmpID, Log Date, Log In, Log Out, Duration
                 String logDateStr = nextLine[1].trim(); // Column 2 = Log Date
-
+                if (logDateStr.isEmpty()) {
+                    continue; // skip empty rows
+                }
                 LocalDate logDate = LocalDate.parse(logDateStr, dateFormatter);
                 int day = logDate.getDayOfMonth();
                 YearMonth ym = YearMonth.from(logDate);
