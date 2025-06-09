@@ -79,6 +79,7 @@ public class EmployeeManagement extends JFrame {
         || currentUser.getuPosition().equals("Accounting Head");
 
 
+        
         btnAdd.setEnabled(isHRorIT);
         btnUpdate.setEnabled(true);
 
@@ -149,16 +150,21 @@ public class EmployeeManagement extends JFrame {
         btnSearch.addActionListener(e -> {
             String input = txtSearch.getText().trim();
             if (!input.matches("\\d+")) {
-                JOptionPane.showMessageDialog(this,
-                    "Please enter a valid numeric Employee Number.",
-                    "Invalid Input",
-                    JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Please enter a valid numeric Employee Number.", "Invalid Input", JOptionPane.WARNING_MESSAGE);
                 return;
             }
+
+            try {
+                // Make sure EmployeeData is loaded first → so Search always works
+                loadEmployeeData();
+            } catch (CsvValidationException ex) {
+                Logger.getLogger(EmployeeManagement.class.getName()).log(Level.SEVERE, null, ex);
+            }
+
+            // Now filter based on input
             TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(tableModel);
             tblPayroll.setRowSorter(sorter);
             sorter.setRowFilter(RowFilter.regexFilter("^" + input + "$", 0));
-            
         });
 
         // Load All Records
@@ -207,10 +213,10 @@ public class EmployeeManagement extends JFrame {
 
         // Update button → open editEmployee panel in a new JFrame (Update mode)
         btnUpdate.addActionListener(e -> {
-            if (isLeader) {
-                // Leadership → update any selected employee
-                int selectedRow = tblPayroll.getSelectedRow();
+            int selectedRow = tblPayroll.getSelectedRow();
 
+            // Leadership / HR / IT → can update anyone
+            if (isLeader || isHRorIT) {
                 if (selectedRow == -1) {
                     JOptionPane.showMessageDialog(this, "Please select an employee to update.", "No Selection", JOptionPane.WARNING_MESSAGE);
                     return;
@@ -222,35 +228,48 @@ public class EmployeeManagement extends JFrame {
                 editEmployee updatePanel = new editEmployee(currentUser, selectedEmpID);
 
                 updateFrame.setContentPane(updatePanel);
-                updateFrame.setSize(600, 800);
+                updateFrame.setSize(800, 850);
                 updateFrame.setLocationRelativeTo(this);
                 updateFrame.setVisible(true);
 
             } else {
-                // Regular user → can only update own profile
+                // Other roles → can update ONLY their own profile
                 String myEmpID = currentUser.getuEmpId();
 
-                JFrame myProfileFrame = new JFrame("Update My Profile");
-                editEmployee myProfilePanel = new editEmployee(currentUser, myEmpID);
+                if (selectedRow == -1) {
+                    // No selection → open MY profile
+                    JFrame myProfileFrame = new JFrame("Update My Profile");
+                    editEmployee myProfilePanel = new editEmployee(currentUser, myEmpID);
 
-                myProfileFrame.setContentPane(myProfilePanel);
-                myProfileFrame.setSize(600, 800);
-                myProfileFrame.setLocationRelativeTo(this);
-                myProfileFrame.setVisible(true);
+                    myProfileFrame.setContentPane(myProfilePanel);
+                    myProfileFrame.setSize(800, 850);
+                    myProfileFrame.setLocationRelativeTo(this);
+                    myProfileFrame.setVisible(true);
+
+                } else {
+                    // Row selected → check if it's their own record
+                    String selectedEmpID = tableModel.getValueAt(selectedRow, 0).toString();
+
+                    if (selectedEmpID.equals(myEmpID)) {
+                        // OK → open own profile
+                        JFrame myProfileFrame = new JFrame("Update My Profile");
+                        editEmployee myProfilePanel = new editEmployee(currentUser, myEmpID);
+
+                        myProfileFrame.setContentPane(myProfilePanel);
+                        myProfileFrame.setSize(800, 850);
+                        myProfileFrame.setLocationRelativeTo(this);
+                        myProfileFrame.setVisible(true);
+
+                    } else {
+                        // Not allowed
+                        JOptionPane.showMessageDialog(this,
+                            "You do not have permission to update this employee record.",
+                            "Permission Denied", JOptionPane.WARNING_MESSAGE);
+                    }
+                }
             }
         });
 
-            //ViewLogin Credentials
-            btnViewLoginCredentials.addActionListener(e -> {
-                JFrame credentialsFrame = new JFrame("Login Credentials");
-                credentialsFrame.setSize(800, 600);
-                credentialsFrame.setLocationRelativeTo(this);
-
-                LoginCredentialsView credentialsPanel = new LoginCredentialsView();
-                credentialsFrame.add(credentialsPanel);
-
-                credentialsFrame.setVisible(true);
-            });
 
         }
 

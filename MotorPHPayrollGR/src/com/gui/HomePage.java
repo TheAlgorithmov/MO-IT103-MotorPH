@@ -621,11 +621,18 @@ public class HomePage extends javax.swing.JFrame {
             JOptionPane.QUESTION_MESSAGE
         );
         if (confirm == JOptionPane.YES_OPTION) {
-            // Close HomePage and open LoginForm
+            // Close ALL open windows first
+            Window[] windows = Window.getWindows();
+            for (Window window : windows) {
+                if (window.isVisible()) {
+                    window.dispose();
+                }
+            }
+
+            // Then open LoginForm
             new com.gui.LoginForm().setVisible(true);
-            this.dispose();
         }
-        // If NO, do nothing (just return)
+        // If NO, do nothing
     }//GEN-LAST:event_jButton6ActionPerformed
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
         // Clock In Button
