@@ -1,4 +1,4 @@
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
+ /* Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
 package com.gui;
 
@@ -8,7 +8,6 @@ import java.util.*;
 import javax.swing.*;
 import java.awt.Color;
 import java.awt.EventQueue;
-import java.awt.GridLayout;
 import java.awt.Image;
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -24,9 +23,6 @@ import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.time.LocalDate;
 import java.time.DayOfWeek;
-import java.time.Month;
-import java.time.format.DateTimeFormatter;
-import javax.swing.*;
 import java.awt.*;
 import java.util.Date;
 
@@ -969,8 +965,8 @@ public class HomePage extends javax.swing.JFrame {
             // 3) Single‐Enter to click Login
             getRootPane().setDefaultButton(jButton1);
             // 4) Tooltips for format hints
-            jTextField1.setToolTipText("Format: EmployeeNumber\n(e.g. 000000)");
-            jPasswordField1.setToolTipText("Format: NameInitials+Emp#+BirthYear!\n(e.g. JR100351861!)");
+            jTextField1.setToolTipText("Format: EmployeeNumber\n(e.g. 10034)");
+            jPasswordField1.setToolTipText("Format: Lowercase Initial of First Name+ LastName \n(e.g. jCruz)");
             // in LoginUI() constructor, after initComponents():
             // Make the field show a gray "USERNAME" placeholder
             jTextField1.setForeground(Color.GRAY);
