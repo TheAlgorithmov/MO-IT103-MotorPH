@@ -393,7 +393,7 @@ public class EmployeeManagement extends JFrame {
             SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             String timestamp = timestampFormat.format(new Date());
 
-            String currentUserName = currentUser.getuFirstname() + " " + currentUser.getuLastname();
+            String currentUserName = currentUser.getuFirstName() + " " + currentUser.getuLastName();
 
             writer.write("DELETE," + currentUserName + "," + empID + "," + "ALL FIELDS" + "," + "Current Record" + "," + "Deleted" + "," +
                     timestamp + "," + "Approved" + "," + "Employee record deleted");

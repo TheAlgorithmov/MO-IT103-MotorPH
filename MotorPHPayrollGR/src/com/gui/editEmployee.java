@@ -1,4 +1,4 @@
-/*
+ /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
@@ -434,7 +434,7 @@ public class editEmployee extends JPanel {
                 String timestamp = timestampFormat.format(new Date());
 
                 // Assuming currentUser is your logged-in user
-                String currentUserName = currentUser.getuFirstname() + " " + currentUser.getuLastname();
+                String currentUserName = currentUser.getuFirstName() + " " + currentUser.getuLastName();
 
                 writer.write("ADD," + currentUserName + "," + id + "," + "ALL FIELDS" + "," + "N/A" + "," + "New Record" + "," +
                         timestamp + "," + "Approved" + "," + "New employee added");
