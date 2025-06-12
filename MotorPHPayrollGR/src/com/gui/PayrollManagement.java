@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 /**
  *
  * @author ongoj & Miles
@@ -182,6 +178,7 @@ import com.gui.PaySlip;
         if (selected == null || selected.equals("No pay periods found")) {
             showErrorDialog("Please select a valid pay period.");
             isValidated = false;
+          
             return;
         }
 

@@ -1,5 +1,4 @@
 package com.payroll;
-
 import com.gui.LoginForm;
 import java.util.*;
 import java.time.*;
@@ -56,11 +55,9 @@ import javax.swing.JOptionPane;
             // Prompt for Employee ID until found in the summary
             boolean employeeFound = false;
             while (!employeeFound) {
-
                 for (Map.Entry<String, MonthlySummary> entry : monthlySummaries.entrySet()) {
                     MonthlySummary summary = entry.getValue();
                     EmployeeData employee = summary.getEmployee();
-
                     if (employee.getEmpId().equals(inputEmpId)) {
                         employeeFound = true;
                         payrollReport = printPayrollReport(summary, employee, benefits, startDate, endDate);
@@ -141,7 +138,6 @@ import javax.swing.JOptionPane;
             data[21] = netPay;
 
             return data;
-
         }
 
         public static void showErrorDialog(String message) {
