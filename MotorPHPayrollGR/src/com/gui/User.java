@@ -29,6 +29,8 @@ public class User {
     private String uTIN;
     private String uPagIbig;
     private String uAddress;
+    private String uFirstname;
+    private String uLastname;
     
     public User(String uEmpId, String uFirstName, String uLastName, String uDob, String uPosition, String uStatus,
                 String uPhoneNumber, String uImmediateSupervisor, String uBasicSalary, String uHourlyRate,
@@ -74,4 +76,10 @@ public class User {
         public String getuTIN() { return uTIN; }
         public String getuPagIbig() { return uPagIbig; }
         public String getuAddress() { return uAddress; }
+        public String getuFirstname() {
+            return uFirstname;
+        }
+        public String getuLastname() {
+            return uLastname;
+}
 }

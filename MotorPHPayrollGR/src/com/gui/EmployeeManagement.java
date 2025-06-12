@@ -18,6 +18,8 @@ import java.awt.event.*;
 import java.io.*;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvValidationException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -78,10 +80,18 @@ public class EmployeeManagement extends JFrame {
         || currentUser.getuPosition().equals("IT Operations and Systems")
         || currentUser.getuPosition().equals("Accounting Head");
 
-
-        
         btnAdd.setEnabled(isHRorIT);
         btnUpdate.setEnabled(true);
+
+        JButton btnDelete = new JButton("Delete");
+
+        // Check role:
+        boolean canDelete = position.equals("IT Operations and Systems") ||
+                            position.equals("HR Manager") ||
+                            position.equals("HR Team Leader");
+
+        btnDelete.setEnabled(canDelete);
+        topPanel.add(btnDelete);
 
         // Add buttons to panel
         topPanel.add(lblSearch);
@@ -206,11 +216,59 @@ public class EmployeeManagement extends JFrame {
             editEmployee addPanel = new editEmployee(currentUser, null); // null = add mode
 
             addFrame.setContentPane(addPanel);
-            addFrame.setSize(600, 800);
+            addFrame.pack();
             addFrame.setLocationRelativeTo(this);
             addFrame.setVisible(true);
         });
 
+        // View Login Credentials button → opens LoginCredentialsView in new window
+        btnViewLoginCredentials.addActionListener(e -> {
+            JFrame credentialsFrame = new JFrame("Login Credentials");
+            credentialsFrame.setSize(800, 600);
+            credentialsFrame.setLocationRelativeTo(this);
+
+            LoginCredentialsView credentialsPanel = new LoginCredentialsView();
+            credentialsFrame.add(credentialsPanel);
+
+            credentialsFrame.setVisible(true);
+        });
+
+        //Delete Button
+        btnDelete.addActionListener(e -> {
+            int selectedRow = tblPayroll.getSelectedRow();
+
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(this, "Please select an employee to delete.", "No Selection", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            String selectedEmpID = tableModel.getValueAt(selectedRow, 0).toString();
+
+            int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Are you sure you want to delete employee ID: " + selectedEmpID + "?",
+                "Confirm Deletion",
+                JOptionPane.YES_NO_OPTION
+            );
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                // Delete from EmployeeData.csv
+                deleteEmployeeByID(selectedEmpID);
+
+                // Log to ChangeLogs
+                logDeletion(selectedEmpID);
+
+                // Reload table
+                try {
+                    loadEmployeeData();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, "Error reloading table after deletion: " + ex.getMessage());
+                }
+            }
+
+            // Regardless → go back (dispose window if needed, or stay on this window)
+        });
+        
         // Update button → open editEmployee panel in a new JFrame (Update mode)
         btnUpdate.addActionListener(e -> {
             int selectedRow = tblPayroll.getSelectedRow();
@@ -275,7 +333,7 @@ public class EmployeeManagement extends JFrame {
 
     private void loadEmployeeData() throws CsvValidationException {
         tableModel.setRowCount(0); // Clear table
-        try (CSVReader reader = new CSVReader(new FileReader("src/com/csv/EmployeeData.csv"))) {
+        try (CSVReader reader = new CSVReader(new InputStreamReader(new FileInputStream("src/com/csv/EmployeeData.csv"), "UTF-8"))) {
             String[] nextLine;
             boolean isHeader = true;
             while ((nextLine = reader.readNext()) != null) {
@@ -283,12 +341,65 @@ public class EmployeeManagement extends JFrame {
                     tableModel.setColumnIdentifiers(nextLine);
                     isHeader = false;
                 } else {
-                    nextLine[0] = nextLine[0].trim(); // <== THIS LINE GOES HERE
+                    nextLine[0] = nextLine[0].trim(); 
                     tableModel.addRow(nextLine);
                 }
             }
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error loading file: " + e.getMessage());
+        }
+    }
+
+    private void deleteEmployeeByID(String empID) {
+        File inputFile = new File("src/com/csv/EmployeeData.csv");
+        File tempFile = new File("src/com/csv/EmployeeData_temp.csv");
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+             BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
+
+            String currentLine;
+            boolean header = true;
+            while ((currentLine = reader.readLine()) != null) {
+                String[] data = currentLine.split(",");
+                if (header) {
+                    writer.write(currentLine);
+                    writer.newLine();
+                    header = false;
+                    continue;
+                }
+
+                if (!data[0].trim().equals(empID)) {
+                    writer.write(currentLine);
+                    writer.newLine();
+                }
+            }
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Error deleting employee: " + e.getMessage());
+        }
+
+        // Replace original file
+        if (!inputFile.delete()) {
+            JOptionPane.showMessageDialog(this, "Error deleting original EmployeeData.csv!");
+            return;
+        }
+
+        if (!tempFile.renameTo(inputFile)) {
+            JOptionPane.showMessageDialog(this, "Error renaming temp EmployeeData.csv!");
+        }
+    }
+
+    private void logDeletion(String empID) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("src/com/csv/EmpDataChangeLogs.csv", true))) {
+            SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String timestamp = timestampFormat.format(new Date());
+
+            String currentUserName = currentUser.getuFirstname() + " " + currentUser.getuLastname();
+
+            writer.write("DELETE," + currentUserName + "," + empID + "," + "ALL FIELDS" + "," + "Current Record" + "," + "Deleted" + "," +
+                    timestamp + "," + "Approved" + "," + "Employee record deleted");
+            writer.newLine();
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Error logging deletion: " + e.getMessage());
         }
     }
 }

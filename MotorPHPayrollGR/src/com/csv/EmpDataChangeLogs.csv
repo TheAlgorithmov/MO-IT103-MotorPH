@@ -1,1 +1,7 @@
 Action,User,TargetEmpID,Field,OldValue,NewValue,DateTime,Status,Notes
+"ADD","null null","10035","ALL FIELDS","N/A","New Record","2025-06-09 00:48:00","Approved","New employee added"
+DELETE,null null,10035,ALL FIELDS,Current Record,Deleted,2025-06-09 01:53:00,Approved,Employee record deleted
+DELETE,null null,10035,ALL FIELDS,Current Record,Deleted,2025-06-09 01:53:06,Approved,Employee record deleted
+DELETE,null null,10035,ALL FIELDS,Current Record,Deleted,2025-06-09 01:53:17,Approved,Employee record deleted
+DELETE,null null,10035,ALL FIELDS,Current Record,Deleted,2025-06-09 01:53:29,Approved,Employee record deleted
+ADD,null null,10000,ALL FIELDS,N/A,New Record,2025-06-09 03:18:19,Approved,New employee added

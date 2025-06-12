@@ -17,18 +17,24 @@ import java.util.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.*;
+import com.toedter.calendar.JDateChooser;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+
 
 public class editEmployee extends JPanel {
 
-    private JTextField txtEmpNum, txtFirstname, txtLastname, txtBirthday, txtAddress, txtPhoneNumber, txtSSS,
-            txtPhilHealth, txtTin, txtPagIbig, txtBasicSalary, txtRiceSubsidy, txtPhoneAllowance,
-            txtClothingAllowance, txtGrossSemiMonthlyRate, txtHourlyRate;
-
+    private JTextField txtEmpNum, txtFirstname,txtLastname,txtAddress,txtBasicSalary,txtPhoneNumber,
+            txtRiceSubsidy,txtPhoneAllowance,txtClothingAllowance,txtGrossSemiMonthlyRate,txtHourlyRate;
+    
+    private JFormattedTextField txtSSS,txtPhilHealth,txtTin,txtPagIbig;
+    
     private JComboBox<String> cmbStatus, cmbPosition, cmbSupervisor;
-
+    
     private User currentUser;
     private String editingEmpID; // null for Add, not null for Update
-
+    private JDateChooser dateChooserBirthday;
+  
     public editEmployee(User currentUser) {
         this(currentUser, null);
     }
@@ -54,19 +60,48 @@ public class editEmployee extends JPanel {
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
+        // === Masked Fields ===
+        MaskFormatter sssMask = null;
+        MaskFormatter philHealthMask = null;
+        MaskFormatter tinMask = null;
+        MaskFormatter pagIbigMask = null;
+
+        try {
+            sssMask = new MaskFormatter("##-#######-#");
+            sssMask.setPlaceholderCharacter('_');
+
+            philHealthMask = new MaskFormatter("##-#########-#");
+            philHealthMask.setPlaceholderCharacter('_');
+
+            tinMask = new MaskFormatter("###-###-###-###");
+            tinMask.setPlaceholderCharacter('_');
+
+            pagIbigMask = new MaskFormatter("####-####-####");
+            pagIbigMask.setPlaceholderCharacter('_');
+
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        txtSSS = new JFormattedTextField(sssMask);
+        txtPhilHealth = new JFormattedTextField(philHealthMask);
+        txtTin = new JFormattedTextField(tinMask);
+        txtPagIbig = new JFormattedTextField(pagIbigMask);
+
+        // === Other Fields ===
         txtEmpNum = new JTextField();
         txtFirstname = new JTextField();
         txtLastname = new JTextField();
-        txtBirthday = new JTextField();
+        dateChooserBirthday = new JDateChooser();
+        dateChooserBirthday.setDateFormatString("d-MMM-yy");
+
         txtAddress = new JTextField();
-        txtPhoneNumber = new JTextField();
-        txtSSS = new JTextField();
-        txtPhilHealth = new JTextField();
-        txtTin = new JTextField();
-        txtPagIbig = new JTextField();
+        txtPhoneNumber = new JTextField(); // Plain textfield for Phone Number
+
         cmbStatus = new JComboBox<>();
         cmbPosition = new JComboBox<>();
         cmbSupervisor = new JComboBox<>();
+
         txtBasicSalary = new JTextField();
         txtRiceSubsidy = new JTextField();
         txtPhoneAllowance = new JTextField();
@@ -74,9 +109,12 @@ public class editEmployee extends JPanel {
         txtGrossSemiMonthlyRate = new JTextField();
         txtHourlyRate = new JTextField();
 
-        txtEmpNum.setEditable(false); // auto-generated
-        txtGrossSemiMonthlyRate.setEditable(false); // auto-calculated
-        txtHourlyRate.setEditable(false); // auto-calculated
+        txtEmpNum.setEditable(false);
+        txtEmpNum.setBackground(Color.LIGHT_GRAY);
+        txtGrossSemiMonthlyRate.setEditable(false);
+        txtGrossSemiMonthlyRate.setBackground(Color.LIGHT_GRAY);
+        txtHourlyRate.setEditable(false);
+        txtHourlyRate.setBackground(Color.LIGHT_GRAY);
 
         int row = 0;
 
@@ -92,55 +130,54 @@ public class editEmployee extends JPanel {
         gbc.gridwidth = 1; row++;
 
         gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("SSS #:"), gbc);
-        gbc.gridx = 1; gbc.gridy = row++; formPanel.add(txtSSS, gbc);
-
-        gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("TIN #:"), gbc);
-        gbc.gridx = 1; gbc.gridy = row++; formPanel.add(txtTin, gbc);
-
-        gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Status:"), gbc);
-        gbc.gridx = 1; gbc.gridy = row++; formPanel.add(cmbStatus, gbc);
-
-        gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Immediate Supervisor:"), gbc);
-        gbc.gridx = 1; gbc.gridy = row++; formPanel.add(cmbSupervisor, gbc);
-
-        gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Rice Subsidy:"), gbc);
-        gbc.gridx = 1; gbc.gridy = row++; formPanel.add(txtRiceSubsidy, gbc);
-
-        gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Clothing Allowance:"), gbc);
-        gbc.gridx = 1; gbc.gridy = row++; formPanel.add(txtClothingAllowance, gbc);
-
-        gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Hourly Rate:"), gbc);
-        gbc.gridx = 1; gbc.gridy = row++; formPanel.add(txtHourlyRate, gbc);
-
-        // RIGHT COLUMN
-        row = 0;
-
-        gbc.gridx = 2; gbc.gridy = row; formPanel.add(new JLabel("First Name:"), gbc);
-        gbc.gridx = 3; gbc.gridy = row++; formPanel.add(txtFirstname, gbc);
-
-        gbc.gridx = 2; gbc.gridy = row; formPanel.add(new JLabel("Birthday:"), gbc);
-        gbc.gridx = 3; gbc.gridy = row++; formPanel.add(txtBirthday, gbc);
-
-        gbc.gridx = 2; gbc.gridy = row; formPanel.add(new JLabel("Phone #:"), gbc);
-        gbc.gridx = 3; gbc.gridy = row++; formPanel.add(txtPhoneNumber, gbc);
-
-        gbc.gridx = 2; gbc.gridy = row; formPanel.add(new JLabel("Philhealth #:"), gbc);
-        gbc.gridx = 3; gbc.gridy = row++; formPanel.add(txtPhilHealth, gbc);
+        gbc.gridx = 1; gbc.gridy = row; formPanel.add(txtSSS, gbc);
 
         gbc.gridx = 2; gbc.gridy = row; formPanel.add(new JLabel("Pag-Ibig #:"), gbc);
         gbc.gridx = 3; gbc.gridy = row++; formPanel.add(txtPagIbig, gbc);
 
+        gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("TIN #:"), gbc);
+        gbc.gridx = 1; gbc.gridy = row; formPanel.add(txtTin, gbc);
+
+        gbc.gridx = 2; gbc.gridy = row; formPanel.add(new JLabel("Philhealth #:"), gbc);
+        gbc.gridx = 3; gbc.gridy = row++; formPanel.add(txtPhilHealth, gbc);
+
+        gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Status:"), gbc);
+        gbc.gridx = 1; gbc.gridy = row; formPanel.add(cmbStatus, gbc);
+
+        gbc.gridx = 2; gbc.gridy = row; formPanel.add(new JLabel("Phone #:"), gbc);
+        gbc.gridx = 3; gbc.gridy = row++; formPanel.add(txtPhoneNumber, gbc);
+
+        gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Immediate Supervisor:"), gbc);
+        gbc.gridx = 1; gbc.gridy = row; formPanel.add(cmbSupervisor, gbc);
+
         gbc.gridx = 2; gbc.gridy = row; formPanel.add(new JLabel("Position:"), gbc);
         gbc.gridx = 3; gbc.gridy = row++; formPanel.add(cmbPosition, gbc);
 
-        gbc.gridx = 2; gbc.gridy = row; formPanel.add(new JLabel("Basic Salary:"), gbc);
-        gbc.gridx = 3; gbc.gridy = row++; formPanel.add(txtBasicSalary, gbc);
+        gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Basic Salary:"), gbc);
+        gbc.gridx = 1; gbc.gridy = row; formPanel.add(txtBasicSalary, gbc);
+
+        gbc.gridx = 2; gbc.gridy = row; formPanel.add(new JLabel("Rice Subsidy:"), gbc);
+        gbc.gridx = 3; gbc.gridy = row++; formPanel.add(txtRiceSubsidy, gbc);
+
+        gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Gross Semi-Monthly Rate:"), gbc);
+        gbc.gridx = 1; gbc.gridy = row; formPanel.add(txtGrossSemiMonthlyRate, gbc);
+
+        gbc.gridx = 2; gbc.gridy = row; formPanel.add(new JLabel("Clothing Allowance:"), gbc);
+        gbc.gridx = 3; gbc.gridy = row++; formPanel.add(txtClothingAllowance, gbc);
+
+        gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Hourly Rate:"), gbc);
+        gbc.gridx = 1; gbc.gridy = row; formPanel.add(txtHourlyRate, gbc);
 
         gbc.gridx = 2; gbc.gridy = row; formPanel.add(new JLabel("Phone Allowance:"), gbc);
         gbc.gridx = 3; gbc.gridy = row++; formPanel.add(txtPhoneAllowance, gbc);
 
-        gbc.gridx = 2; gbc.gridy = row; formPanel.add(new JLabel("Gross Semi-Monthly Rate:"), gbc);
-        gbc.gridx = 3; gbc.gridy = row++; formPanel.add(txtGrossSemiMonthlyRate, gbc);
+        // Top RIGHT column (Birthday + FirstName) — they go first at the top:
+        row = 0;
+        gbc.gridx = 2; gbc.gridy = row; formPanel.add(new JLabel("Birthday:"), gbc);
+        gbc.gridx = 3; gbc.gridy = row++; formPanel.add(dateChooserBirthday, gbc);
+
+        gbc.gridx = 2; gbc.gridy = row; formPanel.add(new JLabel("First Name:"), gbc);
+        gbc.gridx = 3; gbc.gridy = row++; formPanel.add(txtFirstname, gbc);
 
         // === Buttons Panel ===
         JPanel buttonsPanel = new JPanel(new FlowLayout());
@@ -288,67 +325,153 @@ public class editEmployee extends JPanel {
     }
 
     private void loadSelectedEmployee(String empID) {
-        try (BufferedReader br = new BufferedReader(new FileReader("src/com/csv/EmployeeData.csv"))) {
-            String line;
+        try (com.opencsv.CSVReader reader = new com.opencsv.CSVReader(new FileReader("src/com/csv/EmployeeData.csv"))) {
+            String[] nextLine;
             boolean header = true;
-            while ((line = br.readLine()) != null) {
-                String[] data = line.split(",");
+            while ((nextLine = reader.readNext()) != null) {
                 if (header) {
                     header = false;
-                } else {
-                    if (data[0].trim().equals(empID)) {
-                        txtEmpNum.setText(data[0].trim());
-                        txtFirstname.setText(data[1].trim());
-                        txtLastname.setText(data[2].trim());
-                        txtBirthday.setText(data[3].trim());
-                        txtHourlyRate.setText(data[4].trim());
-                        txtRiceSubsidy.setText(data[5].trim());
-                        txtPhoneAllowance.setText(data[6].trim());
-                        txtClothingAllowance.setText(data[7].trim());
-                        cmbStatus.setSelectedItem(data[8].trim());
-                        cmbPosition.setSelectedItem(data[9].trim());
-                        txtBasicSalary.setText(data[10].trim());
-                        txtPhoneNumber.setText(data[11].trim());
-                        txtSSS.setText(data[12].trim());
-                        txtPhilHealth.setText(data[13].trim());
-                        txtTin.setText(data[14].trim());
-                        txtPagIbig.setText(data[15].trim());
-                        cmbSupervisor.setSelectedItem(data[16].trim());
-                        txtGrossSemiMonthlyRate.setText(data[17].trim());
-                        txtAddress.setText(data[18].trim());
-                        break;
+                    continue;
+                }
+                if (nextLine[0].trim().equals(empID)) {
+                    txtEmpNum.setText(nextLine[0].trim());
+                    txtFirstname.setText(nextLine[1].trim());
+                    txtLastname.setText(nextLine[2].trim());
+                    try {
+                        SimpleDateFormat sdf = new SimpleDateFormat("d-MMM-yy");
+                        Date parsedDate = sdf.parse(nextLine[3].trim());
+                        dateChooserBirthday.setDate(parsedDate);
+                    } catch (Exception ex) {
+                        dateChooserBirthday.setDate(null); // fallback if error
                     }
+                    txtHourlyRate.setText(nextLine[4].trim());
+                    txtRiceSubsidy.setText(nextLine[5].trim());
+                    txtPhoneAllowance.setText(nextLine[6].trim());
+                    txtClothingAllowance.setText(nextLine[7].trim());
+                    cmbStatus.setSelectedItem(nextLine[8].trim());
+                    cmbPosition.setSelectedItem(nextLine[9].trim());
+                    txtBasicSalary.setText(nextLine[10].trim());
+                    txtPhoneNumber.setText(nextLine[11].trim());
+                    txtSSS.setText(nextLine[12].trim());
+                    txtPhilHealth.setText(nextLine[13].trim());
+                    txtTin.setText(nextLine[14].trim());
+                    txtPagIbig.setText(nextLine[15].trim());
+                    cmbSupervisor.setSelectedItem(nextLine[16].trim());
+                    txtGrossSemiMonthlyRate.setText(nextLine[17].trim());
+                    txtAddress.setText(nextLine[18].trim());
+                    break;
                 }
             }
-        } catch (IOException e) {
+        } catch (IOException | com.opencsv.exceptions.CsvValidationException e) {
             JOptionPane.showMessageDialog(this, "Error loading employee: " + e.getMessage());
         }
     }
 
-    private void btnAddActionPerformed(ActionEvent evt) {
-        // Required field checks here (same as your current version — can be copied here)
-        // Then write EmployeeData.csv and LoginCredentials.csv → same logic as your existing btnAddActionPerformed
-        JOptionPane.showMessageDialog(this, "TODO: Implement Add/Update Save Logic");
-    }
 
-    private void btnClearActionPerformed(ActionEvent evt) {
-        txtFirstname.setText("");
-        txtLastname.setText("");
-        txtBirthday.setText("");
-        txtAddress.setText("");
-        txtPhoneNumber.setText("");
-        txtSSS.setText("");
-        txtPhilHealth.setText("");
-        txtTin.setText("");
-        txtPagIbig.setText("");
-        cmbStatus.setSelectedIndex(0);
-        cmbPosition.setSelectedIndex(0);
-        cmbSupervisor.setSelectedIndex(0);
-        txtBasicSalary.setText("");
-        txtRiceSubsidy.setText("");
-        txtPhoneAllowance.setText("");
-        txtClothingAllowance.setText("");
-        txtGrossSemiMonthlyRate.setText("");
-        txtHourlyRate.setText("");
-    }
+        private void btnAddActionPerformed(ActionEvent evt) {
+            String id = txtEmpNum.getText().trim();
+            String firstname = txtFirstname.getText().trim();
+            String lastname = txtLastname.getText().trim();
+
+            // For Birthday:
+            SimpleDateFormat sdf = new SimpleDateFormat("d-MMM-yy");
+            String birthday = "";
+            if (dateChooserBirthday.getDate() != null) {
+                birthday = sdf.format(dateChooserBirthday.getDate());
+            }
+
+            String address = txtAddress.getText().trim();
+            String phoneNumber = txtPhoneNumber.getText().trim();
+            String sss = txtSSS.getText().trim();
+            String philhealth = txtPhilHealth.getText().trim();
+            String tin = txtTin.getText().trim();
+            String pagibig = txtPagIbig.getText().trim();
+            String status = cmbStatus.getSelectedItem().toString();
+            String position = cmbPosition.getSelectedItem().toString();
+            String immediate = cmbSupervisor.getSelectedItem() != null ? cmbSupervisor.getSelectedItem().toString() : "";
+            String basicSalary = txtBasicSalary.getText().trim();
+            String riceSubsidy = txtRiceSubsidy.getText().trim();
+            String phoneAllowance = txtPhoneAllowance.getText().trim();
+            String clothingAllowance = txtClothingAllowance.getText().trim();
+            String grossSemi = txtGrossSemiMonthlyRate.getText().trim();
+            String hourlyRate = txtHourlyRate.getText().trim();
+
+            // Required field check
+            if (firstname.isEmpty() || lastname.isEmpty() || birthday.isEmpty() || address.isEmpty() || phoneNumber.isEmpty() ||
+                sss.isEmpty() || philhealth.isEmpty() || tin.isEmpty() || pagibig.isEmpty() || position.isEmpty() || basicSalary.isEmpty()) {
+
+                JOptionPane.showMessageDialog(this, "Please fill in all required fields.", "Input Error", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // === WRITE EmployeeData.csv ===
+            try (BufferedWriter bw = new BufferedWriter(new FileWriter("src/com/csv/EmployeeData.csv", true))) {
+                bw.write(id + "," + firstname + "," + lastname + "," + birthday + "," + address + "," + phoneNumber + "," +
+                        sss + "," + philhealth + "," + tin + "," + pagibig + "," + status + "," + position + "," +
+                        immediate + "," + basicSalary + "," + riceSubsidy + "," + phoneAllowance + "," +
+                        clothingAllowance + "," + grossSemi + "," + hourlyRate);
+                bw.newLine();
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(this, "Error writing to EmployeeData.csv: " + e.getMessage());
+                return;
+            }
+
+            // === WRITE LoginCredentials.csv ===
+            try (BufferedWriter bw = new BufferedWriter(new FileWriter("src/com/csv/LoginCredentials.csv", true))) {
+                String username = id; // Employee ID as username
+                String password = firstname.substring(0, 1).toLowerCase() + lastname; // First letter + Lastname
+
+                bw.write(username + "," + password + "," + firstname + "," + lastname + "," + position);
+                bw.newLine();
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(this, "Error writing to LoginCredentials.csv: " + e.getMessage());
+                return;
+            }
+
+            // === WRITE EmpDataChangeLogs.csv ===
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("src/com/csv/EmpDataChangeLogs.csv", true))) {
+                SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                String timestamp = timestampFormat.format(new Date());
+
+                // Assuming currentUser is your logged-in user
+                String currentUserName = currentUser.getuFirstname() + " " + currentUser.getuLastname();
+
+                writer.write("ADD," + currentUserName + "," + id + "," + "ALL FIELDS" + "," + "N/A" + "," + "New Record" + "," +
+                        timestamp + "," + "Approved" + "," + "New employee added");
+                writer.newLine();
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(this, "Error writing to EmpDataChangeLogs.csv: " + e.getMessage());
+                return;
+            }
+
+            JOptionPane.showMessageDialog(this, "Record added successfully!");
+            clearFields();
+            autoGenerateEmployeeID();
+        }
+
+        private void btnClearActionPerformed(ActionEvent evt) {
+            clearFields();
+        }
+
+        private void clearFields() {
+            txtFirstname.setText("");
+            txtLastname.setText("");
+            dateChooserBirthday.setDate(null);
+            txtAddress.setText("");
+            txtPhoneNumber.setText("");
+            txtSSS.setText("");
+            txtPhilHealth.setText("");
+            txtTin.setText("");
+            txtPagIbig.setText("");
+            cmbStatus.setSelectedIndex(0);
+            cmbPosition.setSelectedIndex(0);
+            cmbSupervisor.setSelectedIndex(0);
+            txtBasicSalary.setText("");
+            txtRiceSubsidy.setText("");
+            txtPhoneAllowance.setText("");
+            txtClothingAllowance.setText("");
+            txtGrossSemiMonthlyRate.setText("");
+            txtHourlyRate.setText("");
+        }
+
 }

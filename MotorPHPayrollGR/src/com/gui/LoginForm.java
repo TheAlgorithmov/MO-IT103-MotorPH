@@ -29,7 +29,6 @@ import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.Reader;
-
 /**
  * LoginForm - JFrame login UI with username/password, placeholders, spinner,
  * credential lookup, and HomePage launch with full User.
@@ -155,17 +154,26 @@ public class LoginForm extends javax.swing.JFrame {
     private void loadCredentials() {
         credentials.clear();
         try (
-            BufferedReader br = new BufferedReader(
-                new InputStreamReader(getClass().getResourceAsStream("/com/csv/LoginCredentials.csv")))
+            CSVReader reader = new CSVReader(
+                new InputStreamReader(getClass().getResourceAsStream("/com/csv/LoginCredentials.csv"), "UTF-8")
+            )
         ) {
-            String line = br.readLine(); // header
-            if (line != null && line.startsWith("\uFEFF")) line = line.substring(1);
-            while ((line = br.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length < 2) continue;
-                String user = parts[0].trim();
-                if (user.equalsIgnoreCase("username")) continue;
-                String pass = parts[1].trim();
+            String[] nextLine;
+            boolean isFirstLine = true;
+
+            while ((nextLine = reader.readNext()) != null) {
+                if (isFirstLine) {
+                    isFirstLine = false; // Skip header
+                    continue;
+                }
+
+                if (nextLine.length < 2) continue; // skip malformed rows
+
+                String user = nextLine[0].trim();    // Username column
+                String pass = nextLine[1].trim();    // Password column
+
+                if (user.equalsIgnoreCase("username")) continue; // safety check on header row
+
                 credentials.put(user, pass);
             }
         } catch (Exception ex) {
@@ -194,20 +202,20 @@ public class LoginForm extends javax.swing.JFrame {
                         parts[1].trim(), // First Name
                         parts[2].trim(), // Last Name
                         parts[3].trim(), // Birthday
-                        parts[9].trim(), // Position
-                        parts[8].trim(), // Status
-                        parts[11].trim(), // Phone Number
-                        parts[16].trim(), // Immediate Supervisor
-                        parts[10].trim(), // Basic Salary
                         parts[4].trim(), // Hourly Rate
                         parts[5].trim(), // Rice Subsidy
                         parts[6].trim(), // Phone Allowance
                         parts[7].trim(), // Clothing Allowance
-                        parts[17].trim(), // Gross Semi-monthly Rate
+                        parts[8].trim(), // Status
+                        parts[9].trim(), // Position
+                        parts[10].trim(), // Basic Salary
+                        parts[11].trim(), // Phone Number
                         parts[12].trim(), // SSS #
                         parts[13].trim(), // PhilHealth #
                         parts[14].trim(), // TIN #
                         parts[15].trim(), // Pag-ibig #
+                        parts[16].trim(), // Immediate Supervisor
+                        parts[17].trim(), // Gross Semi-monthly Rate
                         parts[18].trim()  // Address
                     );
             }
