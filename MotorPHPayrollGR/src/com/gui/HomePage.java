@@ -1,5 +1,6 @@
  /* Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
+
 package com.gui;
 
 import java.awt.event.*;
@@ -25,7 +26,7 @@ import java.time.LocalDate;
 import java.time.DayOfWeek;
 import java.awt.*;
 import java.util.Date;
-
+import java.text.SimpleDateFormat;
 /**
  *
  * @author ongoj

@@ -74,4 +74,12 @@ public class User {
         public String getuTIN() { return uTIN; }
         public String getuPagIbig() { return uPagIbig; }
         public String getuAddress() { return uAddress; }
+
+    String getuFirstname() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    String getuLastname() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
 }
