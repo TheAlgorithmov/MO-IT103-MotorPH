@@ -8,7 +8,6 @@ package com.gui;
  *
  * @author Miles & JEO
  */
-
 public class User {
     private String uEmpId;
     private String uFirstName;
@@ -54,7 +53,6 @@ public class User {
         this.uPagIbig = uPagIbig;
         this.uAddress = uAddress;
     }
-
         public String getuEmpId() { return uEmpId; }
         public String getuFirstName() { return uFirstName; }
         public String getuLastName() { return uLastName; }
