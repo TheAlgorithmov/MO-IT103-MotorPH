@@ -1,245 +1,1191 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
 package com.gui;
 
-/**
- *
- * @author Miles
- */
-
+import java.awt.event.*;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import javax.swing.*;
+import java.awt.Color;
+import java.awt.EventQueue;
+import java.awt.GridLayout;
+import java.awt.Image;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.Timer;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.time.LocalDate;
+import java.time.DayOfWeek;
+import java.time.Month;
+import java.time.format.DateTimeFormatter;
 import javax.swing.*;
 import java.awt.*;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
-import javax.swing.border.*;
 
-public class HomePage extends JFrame {
+/**
+ *
+ * @author ongoj
+ */
+public class HomePage extends javax.swing.JFrame {
+
+    // To keep time logs for attendance
+    private User currentUser; // Store the user info
+    private String clockInDate = null;
+    private String clockInTime = null;
     
-    private String uFullName = "";
-    private List<String> timeLogs = new ArrayList<>();
+    //jPanel2
+    private javax.swing.JLabel jLabelGovHeader;
+    private javax.swing.JLabel jLabelSSS;
+    private javax.swing.JLabel jLabelPhilhealth;
+    private javax.swing.JLabel jLabelTIN;
+    private javax.swing.JLabel jLabelPagibig;
 
-    public HomePage(User currentUser) {
-        setTitle("Home Page");
-        setSize(800, 600);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BorderLayout());
+    private javax.swing.JLabel jLabelPayHeader;
+    private javax.swing.JLabel jLabelBasicSalary;
+    private javax.swing.JLabel jLabelGrossSemi;
 
-        // === SIDEBAR ===
-        JPanel sidebar = new JPanel();
-        sidebar.setLayout(new GridBagLayout());
-        sidebar.setPreferredSize(new Dimension(220, getHeight()));
-        sidebar.setBackground(new Color(45, 52, 71));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+    private javax.swing.JLabel jLabelAllowHeader;
+    private javax.swing.JLabel jLabelHourlyRate;
+    private javax.swing.JLabel jLabelRiceSubsidy;
+    private javax.swing.JLabel jLabelPhoneAllowance;
+    private javax.swing.JLabel jLabelClothingAllowance;
 
-        // --- User Info Panel ---
-        JPanel userInfoPanel = new JPanel();
-        userInfoPanel.setLayout(new BoxLayout(userInfoPanel, BoxLayout.Y_AXIS));
-        userInfoPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        userInfoPanel.setOpaque(false);
+    // Constructor: receive User info
+    public HomePage(User user) {
+        this.currentUser = user;
+        initComponents();
         
-        JLabel userIcon = new JLabel("👤", SwingConstants.CENTER);
-        userIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 46));
-        userIcon.setPreferredSize(new Dimension(80, 80));
-        userIcon.setMinimumSize(new Dimension(80, 80));
-        userIcon.setMaximumSize(new Dimension(80, 80));
-        userIcon.setOpaque(true);
-        userIcon.setBackground(Color.GRAY);
-        userIcon.setForeground(Color.WHITE);
-        userIcon.setAlignmentX(Component.CENTER_ALIGNMENT);
-        userIcon.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 2));
-        
-        uFullName = currentUser.getuFirstName() + " " + currentUser.getuLastName();
-        JLabel nameLabel = new JLabel(uFullName);
-        nameLabel.setForeground(Color.WHITE);
-        nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        userInfoPanel.add(Box.createVerticalStrut(30));
-        userInfoPanel.add(userIcon);
-        userInfoPanel.add(Box.createVerticalStrut(10));
-        userInfoPanel.add(nameLabel);
-
-        // --- Navigation Panel ---
-        JPanel navPanel = new JPanel();
-        navPanel.setLayout(new BoxLayout(navPanel, BoxLayout.Y_AXIS));
-        navPanel.setOpaque(false);
-        // navPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
-
-        JButton homeBtn = styleButton("Home Page");
-        JButton payrollBtn = styleButton("Payroll Management");
-        JButton employeeBtn = styleButton("Employee Management");
-
-        payrollBtn.addActionListener(e -> new PayrollManagement());
-        employeeBtn.addActionListener(e -> new EmployeeManagement());
-
-        navPanel.add(Box.createVerticalStrut(10));
-        navPanel.add(homeBtn);
-        navPanel.add(payrollBtn);
-        navPanel.add(employeeBtn);
-
-        // --- Account Panel ---
-        JPanel accountPanel = new JPanel();
-        accountPanel.setLayout(new BoxLayout(accountPanel, BoxLayout.Y_AXIS));
-        accountPanel.setOpaque(false);
-        // accountPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
-
-        JLabel accountLabel = new JLabel("Account");
-        accountLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        accountLabel.setBorder(new EmptyBorder(0, 10, 10, 0));
-        accountLabel.setForeground(Color.WHITE);
-        accountPanel.add(accountLabel);
-
-        JButton timeInBtn = styleButton("Time In");
-        JButton timeOutBtn = styleButton("Time Out");
-        JButton logoutBtn = styleButton("Logout");
-        
-        JLabel dateLabel = new JLabel();
-        dateLabel.setForeground(Color.WHITE);
-        dateLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        dateLabel.setBorder(new EmptyBorder(0, 10, 0, 0));
-        
-        JLabel timeLabel = new JLabel();
-        timeLabel.setForeground(Color.WHITE);
-        timeLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        timeLabel.setBorder(new EmptyBorder(10, 10, 0, 0));
-
-        updateClock(timeLabel, dateLabel);
-
-        timeInBtn.addActionListener(e -> {
-            String time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
-            timeLogs.add("Time In: " + time);
-            JOptionPane.showMessageDialog(this, "Time In recorded.");
-        });
-
-        timeOutBtn.addActionListener(e -> {
-            String time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
-            timeLogs.add("Time Out: " + time);
-            JOptionPane.showMessageDialog(this, "Time Out recorded.");
-        });
-
-        logoutBtn.addActionListener(e -> {
-            int choice = JOptionPane.showConfirmDialog(this, "Are you sure you want to logout?", "Logout Confirmation", JOptionPane.YES_NO_OPTION);
-            if (choice == JOptionPane.YES_OPTION) {
-                System.exit(0);
-            }
-        });
-        
-        accountPanel.add(timeInBtn);
-        accountPanel.add(timeOutBtn);
-        accountPanel.add(logoutBtn);
-        accountPanel.add(Box.createVerticalStrut(10));
-        accountPanel.add(dateLabel);
-        accountPanel.add(timeLabel);
-        accountPanel.add(Box.createVerticalStrut(10));
-
-        // === Add panels to sidebar ===
-        sidebar.add(userInfoPanel, gbc);
-        gbc.gridy++;
-        sidebar.add(navPanel, gbc);
-        gbc.gridy++;
-        gbc.weighty = 1;
-        sidebar.add(Box.createVerticalGlue(), gbc);
-        gbc.gridy++;
-        gbc.weighty = 0;
-        sidebar.add(accountPanel, gbc);
-
-        add(sidebar, BorderLayout.WEST);
-
-        // === MAIN PANEL ===
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BorderLayout(10, 10));
-        mainPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
-        mainPanel.setBackground(Color.WHITE);
-
-        JPanel infoPanel = new JPanel(new BorderLayout(10, 10));
-        infoPanel.setBackground(Color.WHITE);
-
-        JLabel photoLabel = new JLabel("👤", SwingConstants.CENTER);
-        photoLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 92));
-        photoLabel.setPreferredSize(new Dimension(150, 150));
-        photoLabel.setMinimumSize(new Dimension(150, 150));
-        photoLabel.setMaximumSize(new Dimension(150, 150));
-        photoLabel.setOpaque(true);
-        photoLabel.setBackground(Color.GRAY);
-        photoLabel.setForeground(Color.WHITE);
-        photoLabel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 2));
-        infoPanel.add(photoLabel, BorderLayout.WEST);
-
-        JPanel detailsPanel = new JPanel();
-        detailsPanel.setLayout(new GridLayout(5, 1, 5, 5));
-        detailsPanel.setBackground(Color.WHITE);
-        detailsPanel.add(new JLabel("Employee ID: " + currentUser.getuEmpId()));
-        detailsPanel.add(new JLabel("Name: " + currentUser.getuFirstName() + " " + currentUser.getuLastName()));
-        detailsPanel.add(new JLabel("Date of Birth: " + currentUser.getuDob()));
-        detailsPanel.add(new JLabel("Position: " + currentUser.getuPosition()));
-        detailsPanel.add(new JLabel("Status: " + currentUser.getuStatus()));
-
-        infoPanel.add(detailsPanel, BorderLayout.CENTER);
-
-        JButton attendanceButton = new JButton("\uD83D\uDCC5 View Attendance");
-        attendanceButton.setFocusPainted(false);
-        attendanceButton.setBackground(new Color(70, 130, 180));
-        attendanceButton.setForeground(Color.WHITE);
-        attendanceButton.setPreferredSize(new Dimension(150, 40));
-
-        attendanceButton.addActionListener(e -> {
-            if (timeLogs.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "No attendance records found.");
-            } else {
-                StringBuilder records = new StringBuilder("Attendance Records:\n\n");
-                for (String log : timeLogs) {
-                    records.append(log).append("\n");
-                }
-                JTextArea area = new JTextArea(records.toString());
-                area.setEditable(false);
-                JScrollPane scrollPane = new JScrollPane(area);
-                scrollPane.setPreferredSize(new Dimension(400, 300));
-                JOptionPane.showMessageDialog(this, scrollPane, "Attendance Log", JOptionPane.INFORMATION_MESSAGE);
-            }
-        });
-
-        mainPanel.add(infoPanel, BorderLayout.NORTH);
-        JPanel bottomPanel = new JPanel();
-        bottomPanel.setBackground(Color.WHITE);
-        bottomPanel.add(attendanceButton);
-        mainPanel.add(bottomPanel, BorderLayout.SOUTH);
-
-        add(mainPanel, BorderLayout.CENTER);
-
-        setLocationRelativeTo(null);
-        setVisible(true);
-        setResizable(false);
-    }
-
-    private JButton styleButton(String text) {
-        JButton button = new JButton(text);
-        button.setFocusPainted(false);
-        button.setBackground(new Color(70, 130, 180));
-        button.setForeground(Color.WHITE);
-        button.setHorizontalAlignment(SwingConstants.LEFT);
-        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-        button.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(100, 100, 100), 1),
-            new EmptyBorder(5, 15, 5, 5)
-        ));
-        return button;
-    }
-
-    private void updateClock(JLabel timeLabel, JLabel dateLabel) {
-        Timer timer = new Timer(1000, e -> {
-            String time = new SimpleDateFormat("HH:mm:ss").format(new Date());
-            String date = new SimpleDateFormat("EEEE, MMMM, dd, yyyy").format(new Date());
-            timeLabel.setText("Time: " + time);
-            dateLabel.setText("Date: " + date);
+        //jPanel2 method
+        setupJPanel2(); // we will define this method
             
+        setResizable(false);// Removes maximize and resizing
+        setLocationRelativeTo(null); // This centers the window on the screen
+        pack();// Fit frame to preferred size
+        
+        // Set the company logo on the left
+        SwingUtilities.invokeLater(() -> setLogoOnLabel(jLabel1, "/com/gui/images/LoginIcons/RevisedLogo.png"));
+        SwingUtilities.invokeLater(() -> setProfileImage(jLabel5, currentUser.getuEmpId()));
+        setUserInfo();
+        startClock();
+        
+    }
+    
+    // Default constructor for GUI builder compatibility (not used in production)
+    public HomePage() {
+        initComponents();
+        startClock();
+    }
+
+    HomePage(String user) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    // Assign user info to labels
+    private void setUserInfo() {
+        if (currentUser != null) {
+            jLabel6.setText("<html><b>Employee ID:</b> " + currentUser.getuEmpId() + "</html>");
+            jLabel7.setText("<html><b>Name:</b> " + currentUser.getuFirstName() + " " + currentUser.getuLastName() + "</html>");
+            jLabel8.setText("<html><b>Date of Birth:</b> " + currentUser.getuDob() + "</html>");
+            jLabel9.setText("<html><b>Position:</b> " + currentUser.getuPosition() + "</html>");
+            jLabel10.setText("<html><b>Status:</b> " + currentUser.getuStatus() + "</html>");
+            jLabel11.setText("<html><b>Phone Number:</b> " + currentUser.getuPhoneNumber() + "</html>");
+            jLabel12.setText("<html><b>Immediate Supervisor:</b><br>" + currentUser.getuImmediateSupervisor() + "</html>");
+            jLabel14.setText("<html><b>Address:</b> " + currentUser.getuAddress() + "</html>");
+
+             //jPanel2 Values
+            jLabelSSS.setText("SSS Number: " + currentUser.getuSSS());
+            jLabelPhilhealth.setText("Philhealth Number: " + currentUser.getuPhilHealth());
+            jLabelTIN.setText("TIN Number: " + currentUser.getuTIN());
+            jLabelPagibig.setText("Pag-ibig Number: " + currentUser.getuPagIbig());
+
+            jLabelBasicSalary.setText("Basic Salary: " + currentUser.getuBasicSalary());
+            jLabelGrossSemi.setText("Gross Semi-monthly Rate: " + currentUser.getuGrossSemiRate());
+
+            jLabelHourlyRate.setText("Hourly Rate: " + currentUser.getuHourlyRate());
+            jLabelRiceSubsidy.setText("Rice Subsidy: " + currentUser.getuRiceSubsidy());
+            jLabelPhoneAllowance.setText("Phone Allowance: " + currentUser.getuPhoneAllowance());
+            jLabelClothingAllowance.setText("Clothing Allowance: " + currentUser.getuClothingAllowance());
+
+            
+            // Optionally set profile image:
+            // jLabel1.setIcon(new ImageIcon(getClass().getResource("/com/gui/profile.png")));
+            // jLabel5.setIcon(...) for main photo
+        }
+    }
+
+    // Start a timer to update date and time labels
+    private String getCurrentManilaDate() {
+    SimpleDateFormat dateFormat = new SimpleDateFormat("M/d/yyyy");
+    dateFormat.setTimeZone(TimeZone.getTimeZone("Asia/Manila"));
+    return dateFormat.format(new Date());
+}
+    private String getCurrentManilaTime() {
+        SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a");
+        timeFormat.setTimeZone(TimeZone.getTimeZone("Asia/Manila"));
+        return timeFormat.format(new Date());
+}
+    private void startClock() {
+        Timer timer = new Timer(1000, new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                Date now = new Date();
+                SimpleDateFormat dateFormat = new SimpleDateFormat("EEEE, MMMM dd, yyyy");
+                SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm:ss a");
+                dateFormat.setTimeZone(TimeZone.getTimeZone("Asia/Manila"));
+                timeFormat.setTimeZone(TimeZone.getTimeZone("Asia/Manila"));
+                jLabel3.setText("Date: " + dateFormat.format(now));
+                jLabel4.setText("Time: " + timeFormat.format(now));
+            }
         });
         timer.start();
     }
-} 
+    
+        private void setProfileImage(JLabel label, String empId) {
+        String[] exts = {".png", ".jpg", ".jpeg"};
+        boolean found = false;
+        for (String ext : exts) {
+            String path = "/com/gui/images/EmployeeIDs/" + empId + ext;
+            java.net.URL imgURL = getClass().getResource(path);
+            if (imgURL != null) {
+                ImageIcon icon = new ImageIcon(imgURL);
+                int width = label.getWidth();
+                int height = label.getHeight();
+                float aspectRatio = (float) icon.getIconWidth() / icon.getIconHeight();
+                if (width / (float) height > aspectRatio) {
+                    width = (int) (height * aspectRatio); 
+                } 
+                else { height = (int) (width / aspectRatio);
+                }
+                Image img = icon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
+                label.setIcon(new ImageIcon(img));
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            // Use NULL.png as the fallback image
+            java.net.URL defaultImg = getClass().getResource("/com/gui/images/EmployeeIDs/NULL.png");
+            if (defaultImg != null) {
+                ImageIcon icon = new ImageIcon(defaultImg);
+                int width = label.getWidth() > 0 ? label.getWidth() : label.getPreferredSize().width;
+                int height = label.getHeight() > 0 ? label.getHeight() : label.getPreferredSize().height;
+                Image img = icon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
+                label.setIcon(new ImageIcon(img));
+                label.setText("");
+            } else {
+                // If even NULL.png is missing, fallback to text
+                label.setText("No Photo");
+                label.setIcon(null);
+            }
+        }
+        label.setHorizontalAlignment(SwingConstants.CENTER);
+        label.setVerticalAlignment(SwingConstants.CENTER);
+}
+        // Helper method for setLogoOnLabel
+        private void setLogoOnLabel(JLabel label, String resourcePath) {
+        java.net.URL logoURL = getClass().getResource(resourcePath);
+        if (logoURL != null) {
+            ImageIcon icon = new ImageIcon(logoURL);
+            // Always use 200x200 for scaling
+            int width = 200;
+            int height = 200;
+            Image img = icon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
+            label.setIcon(new ImageIcon(img));
+            label.setText("");
+            label.setPreferredSize(new java.awt.Dimension(width, height)); // Optional: Forces the label to reserve this space
+        } else {
+            label.setText("Logo not found");
+            label.setIcon(null);
+        }
+        label.setHorizontalAlignment(SwingConstants.CENTER);
+        label.setVerticalAlignment(SwingConstants.CENTER);
+        }
+        
+        // Only reads EmployeeTimeEntries.csv and writes a new file in user's chosen folder
+    private void generateAttendanceReport(File directory, Date from, Date to) {
+        String empId = currentUser.getuEmpId();
+        SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy");
+        SimpleDateFormat fileDateFormat = new SimpleDateFormat("yyyy.MM.dd");
+        SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a");
+
+        String fromStr = (from != null) ? fileDateFormat.format(from) : "start";
+        String toStr = (to != null) ? fileDateFormat.format(to) : "end";
+
+        // Filename format: EmpID_yyyy.mm.dd_yyyy.mm.dd.csv
+        String fileName = empId + "_" + fromStr + "_" + toStr + ".csv";
+        File csvFile = new File(directory, fileName);
+
+        try {
+            String userCsvFile = "src/com/csv/DTR/" + empId + ".csv";
+            BufferedReader br = new BufferedReader(new FileReader(userCsvFile));
+            PrintWriter out = new PrintWriter(new FileWriter(csvFile));
+
+            // Write header
+            out.println("Date,Clock In,Clock Out,Duration");
+
+            String line;
+            boolean isFirstLine = true;
+            boolean hasData = false;
+
+            while ((line = br.readLine()) != null) {
+                if (isFirstLine) { isFirstLine = false; continue; } // skip header
+                String[] parts = line.split(",");
+                if (parts.length >= 5 && parts[0].equals(empId)) {
+                    Date entryDate = sdf.parse(parts[1]);
+                    boolean inRange = (from == null || !entryDate.before(from)) &&
+                                      (to == null || !entryDate.after(to));
+                    if (inRange) {
+                        String clockIn = parts[2].trim();
+                        String clockOut = parts[3].trim();
+                        String durationStr = parts[4].trim(); // Already computed in DTR CSV
+
+                        // Fallback: if empty or "Error", recompute:
+                        if (durationStr.isEmpty() || durationStr.equalsIgnoreCase("Error")) {
+                            try {
+                                Date clockInDate = timeFormat.parse(clockIn);
+                                Date clockOutDate = timeFormat.parse(clockOut);
+                                long durationMs = clockOutDate.getTime() - clockInDate.getTime();
+                                if (durationMs < 0) durationMs += 24 * 60 * 60 * 1000;
+                                long diffMinutes = durationMs / (60 * 1000);
+                                long hours = diffMinutes / 60;
+                                long minutes = diffMinutes % 60;
+                                durationStr = hours + "h " + minutes + "m";
+                            } catch (Exception ex) {
+                                durationStr = "Error";
+                            }
+                        }
+
+                        out.println(parts[1] + "," + clockIn + "," + clockOut + "," + durationStr);
+                        hasData = true;
+                    }
+                }
+            }
+            br.close();
+            out.close();
+
+            if (hasData) {
+                JOptionPane.showMessageDialog(this, "Report saved to:\n" + csvFile.getAbsolutePath());
+            } else {
+                JOptionPane.showMessageDialog(this, "No records found in the selected date range.");
+                csvFile.delete(); // Remove empty file
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error generating report: " + e.getMessage());
+        }
+    }
+
+    private void setupJPanel2() {
+        jPanel2.setBorder(javax.swing.BorderFactory.createTitledBorder("Additional Details"));
+        jPanel2.setLayout(new java.awt.GridLayout(0, 1));
+
+        jLabelGovHeader = new javax.swing.JLabel("Government & Contributions:");
+        jLabelGovHeader.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 13));
+        jLabelSSS = new javax.swing.JLabel("SSS Number: ");
+        jLabelPhilhealth = new javax.swing.JLabel("Philhealth Number: ");
+        jLabelTIN = new javax.swing.JLabel("TIN Number: ");
+        jLabelPagibig = new javax.swing.JLabel("Pag-ibig Number: ");
+
+        jLabelPayHeader = new javax.swing.JLabel("Pay Details:");
+        jLabelPayHeader.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 13));
+        jLabelBasicSalary = new javax.swing.JLabel("Basic Salary: ");
+        jLabelGrossSemi = new javax.swing.JLabel("Gross Semi-monthly Rate: ");
+
+        jLabelAllowHeader = new javax.swing.JLabel("Allowances:");
+        jLabelAllowHeader.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 13));
+        jLabelHourlyRate = new javax.swing.JLabel("Hourly Rate: ");
+        jLabelRiceSubsidy = new javax.swing.JLabel("Rice Subsidy: ");
+        jLabelPhoneAllowance = new javax.swing.JLabel("Phone Allowance: ");
+        jLabelClothingAllowance = new javax.swing.JLabel("Clothing Allowance: ");
+
+        // Add labels to jPanel2
+        jPanel2.add(jLabelGovHeader);
+        jPanel2.add(jLabelSSS);
+        jPanel2.add(jLabelPhilhealth);
+        jPanel2.add(jLabelTIN);
+        jPanel2.add(jLabelPagibig);
+
+        jPanel2.add(jLabelPayHeader);
+        jPanel2.add(jLabelBasicSalary);
+        jPanel2.add(jLabelGrossSemi);
+
+        jPanel2.add(jLabelAllowHeader);
+        jPanel2.add(jLabelHourlyRate);
+        jPanel2.add(jLabelRiceSubsidy);
+        jPanel2.add(jLabelPhoneAllowance);
+        jPanel2.add(jLabelClothingAllowance);
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        jScrollPane1 = new javax.swing.JScrollPane();
+        jTextArea1 = new javax.swing.JTextArea();
+        jPanel1 = new javax.swing.JPanel();
+        jLabel1 = new javax.swing.JLabel();
+        jLabel2 = new javax.swing.JLabel();
+        jButton2 = new javax.swing.JButton();
+        javax.swing.JButton jButton1 = new javax.swing.JButton();
+        jButton3 = new javax.swing.JButton();
+        jLabel3 = new javax.swing.JLabel();
+        jLabel4 = new javax.swing.JLabel();
+        jButton4 = new javax.swing.JButton();
+        jButton5 = new javax.swing.JButton();
+        jButton7 = new javax.swing.JButton();
+        jButton6 = new javax.swing.JButton();
+        jPanel2 = new javax.swing.JPanel();
+        jPanel3 = new javax.swing.JPanel();
+        jLabel12 = new javax.swing.JLabel();
+        jLabel6 = new javax.swing.JLabel();
+        jLabel8 = new javax.swing.JLabel();
+        jLabel14 = new javax.swing.JLabel();
+        jLabel7 = new javax.swing.JLabel();
+        jLabel10 = new javax.swing.JLabel();
+        jLabel11 = new javax.swing.JLabel();
+        jLabel9 = new javax.swing.JLabel();
+        jLabel5 = new javax.swing.JLabel();
+
+        jTextArea1.setColumns(20);
+        jTextArea1.setRows(5);
+        jScrollPane1.setViewportView(jTextArea1);
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setMaximumSize(new java.awt.Dimension(999, 999));
+        setMinimumSize(new java.awt.Dimension(900, 900));
+        setModalExclusionType(null);
+        setSize(new java.awt.Dimension(700, 500));
+
+        jPanel1.setBorder(javax.swing.BorderFactory.createEtchedBorder(java.awt.Color.lightGray, java.awt.Color.darkGray));
+
+        jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel1.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        jLabel1.setMaximumSize(new java.awt.Dimension(200, 200));
+        jLabel1.setMinimumSize(new java.awt.Dimension(150, 150));
+        jLabel1.setPreferredSize(null);
+        jLabel1.setVerticalTextPosition(javax.swing.SwingConstants.TOP);
+
+        jLabel2.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
+        jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel2.setText("MENU");
+
+        jButton2.setText("Payroll Management");
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
+
+        jButton1.setText("Home Page");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton1ActionPerformed(evt);
+            }
+        });
+
+        jButton3.setText("Employee Management");
+        jButton3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton3ActionPerformed(evt);
+            }
+        });
+
+        jLabel3.setText("jLabel3");
+
+        jLabel4.setText("jLabel4");
+
+        jButton4.setText("Clock In");
+        jButton4.setMaximumSize(new java.awt.Dimension(110, 30));
+        jButton4.setMinimumSize(new java.awt.Dimension(110, 30));
+        jButton4.setPreferredSize(new java.awt.Dimension(110, 30));
+        jButton4.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton4ActionPerformed(evt);
+            }
+        });
+
+        jButton5.setText("Clock Out");
+        jButton5.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        jButton5.setMaximumSize(new java.awt.Dimension(110, 30));
+        jButton5.setMinimumSize(new java.awt.Dimension(110, 30));
+        jButton5.setPreferredSize(new java.awt.Dimension(110, 30));
+        jButton5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton5ActionPerformed(evt);
+            }
+        });
+
+        jButton7.setText("View Attendance");
+        jButton7.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton7ActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(18, 18, 18)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(jLabel3, javax.swing.GroupLayout.DEFAULT_SIZE, 133, Short.MAX_VALUE)
+                                .addComponent(jLabel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGap(4, 4, 4)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                        .addComponent(jButton1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                        .addComponent(jButton2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                        .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 233, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addComponent(jButton3, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                        .addComponent(jButton7, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                        .addComponent(jButton4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addGap(18, 18, 18)
+                                        .addComponent(jButton5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(38, 38, 38)
+                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 201, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(17, Short.MAX_VALUE))
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addComponent(jLabel3)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel4)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jButton4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jButton5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 189, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jLabel2)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jButton1)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jButton2)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jButton3)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jButton7)
+                .addContainerGap(65, Short.MAX_VALUE))
+        );
+
+        jButton6.setText("Log out");
+        jButton6.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton6ActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 0, Short.MAX_VALUE)
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 0, Short.MAX_VALUE)
+        );
+
+        jLabel12.setText("jLabel12");
+
+        jLabel6.setText("jLabel6");
+
+        jLabel8.setText("jLabel8");
+
+        jLabel14.setText("jLabel14");
+
+        jLabel7.setText("jLabel7");
+
+        jLabel10.setText("jLabel10");
+
+        jLabel11.setText("jLabel11");
+
+        jLabel9.setText("jLabel9");
+
+        jLabel5.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel5.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        jLabel5.setMaximumSize(new java.awt.Dimension(200, 200));
+        jLabel5.setMinimumSize(new java.awt.Dimension(150, 150));
+        jLabel5.setPreferredSize(null);
+
+        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+        jPanel3.setLayout(jPanel3Layout);
+        jPanel3Layout.setHorizontalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addComponent(jLabel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(6, 6, 6)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jLabel7, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jLabel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jLabel10, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jLabel12, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jLabel11, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jLabel9, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                    .addComponent(jLabel14, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
+        );
+        jPanel3Layout.setVerticalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(3, 3, 3)
+                        .addComponent(jLabel6, javax.swing.GroupLayout.DEFAULT_SIZE, 22, Short.MAX_VALUE)
+                        .addGap(6, 6, 6)
+                        .addComponent(jLabel7, javax.swing.GroupLayout.DEFAULT_SIZE, 22, Short.MAX_VALUE)
+                        .addGap(6, 6, 6)
+                        .addComponent(jLabel8, javax.swing.GroupLayout.DEFAULT_SIZE, 22, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel9, javax.swing.GroupLayout.DEFAULT_SIZE, 22, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel10, javax.swing.GroupLayout.DEFAULT_SIZE, 22, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel12, javax.swing.GroupLayout.DEFAULT_SIZE, 23, Short.MAX_VALUE)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel11, javax.swing.GroupLayout.DEFAULT_SIZE, 28, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel14, javax.swing.GroupLayout.DEFAULT_SIZE, 28, Short.MAX_VALUE)
+                .addContainerGap())
+        );
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(311, 311, 311)
+                        .addComponent(jButton6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(18, 18, 18)
+                        .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                .addContainerGap())
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addGap(10, 10, 10)
+                .addComponent(jButton6)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
+                .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
+        );
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
+        // Logout Button - returns to LoginForm
+        int confirm = JOptionPane.showConfirmDialog(
+            this,
+            "Are you sure you want to log out?",
+            "Logout Confirmation",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE
+        );
+        if (confirm == JOptionPane.YES_OPTION) {
+            // Close ALL open windows first
+            Window[] windows = Window.getWindows();
+            for (Window window : windows) {
+                if (window.isVisible()) {
+                    window.dispose();
+                }
+            }
+
+            // Then open LoginForm
+            new com.gui.LoginForm().setVisible(true);
+        }
+        // If NO, do nothing
+    }//GEN-LAST:event_jButton6ActionPerformed
+    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
+        // Clock In Button
+        clockInTime = getCurrentManilaTime();
+        clockInDate = getCurrentManilaDate();
+        JOptionPane.showMessageDialog(this, "Time In recorded: " + clockInTime);
+    }//GEN-LAST:event_jButton4ActionPerformed
+    private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
+        // Clock Out Button
+        if (clockInTime == null) {
+            JOptionPane.showMessageDialog(this, "You need to clock in first!");
+            return;
+        }
+
+        String clockOutTime = getCurrentManilaTime();
+        String userCsvFile = "src/com/csv/DTR/" + currentUser.getuEmpId() + ".csv";
+        SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a");
+
+        try {
+            // Compute duration between clock-in and clock-out
+            Date clockInDateObj = timeFormat.parse(clockInTime);
+            Date clockOutDateObj = timeFormat.parse(clockOutTime);
+
+            long durationMs = clockOutDateObj.getTime() - clockInDateObj.getTime();
+            if (durationMs < 0) {
+                durationMs += 24 * 60 * 60 * 1000; // Handle overnight clock out
+            }
+
+            long durationMinutes = durationMs / (60 * 1000);
+            long hours = durationMinutes / 60;
+            long minutes = durationMinutes % 60;
+
+            // If less than 8 hours, ask for confirmation
+            if (durationMinutes < 480) { // 480 minutes = 8 hours
+                int confirm = JOptionPane.showConfirmDialog(
+                    this,
+                    "You have worked less than 8 hours (" + hours + "h " + minutes + "m).\nAre you sure you want to clock out?",
+                    "Confirm Early Clock Out",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE
+                );
+
+                if (confirm != JOptionPane.YES_OPTION) {
+                    // Cancel Clock Out
+                    return;
+                }
+            }
+
+            // Save to CSV
+            File file = new File(userCsvFile);
+            boolean isNewFile = !file.exists();
+
+            try (FileWriter fw = new FileWriter(userCsvFile, true);
+                 BufferedWriter bw = new BufferedWriter(fw);
+                 PrintWriter out = new PrintWriter(bw)) {
+
+                if (isNewFile) {
+                    out.println("EmpID,Log Date,Clock In,Clock Out,Duration");
+                }
+
+                String durationStr = hours + "h " + minutes + "m";
+
+                out.println(currentUser.getuEmpId() + "," +
+                            clockInDate + "," +
+                            clockInTime + "," +
+                            clockOutTime + "," +
+                            durationStr);
+
+                // Clear clock in
+                clockInTime = null;
+                clockInDate = null;
+                JOptionPane.showMessageDialog(this, "Time Out recorded and attendance saved!");
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error processing Clock Out: " + e.getMessage());
+        }
+    }//GEN-LAST:event_jButton5ActionPerformed
+
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jButton1ActionPerformed
+
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        // Payroll Management Button
+        new PayrollManagement(currentUser).setVisible(true);
+    }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
+        // Employee Management Button
+        new EmployeeManagement(currentUser).setVisible(true);
+    }//GEN-LAST:event_jButton3ActionPerformed
+
+    private void jButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton7ActionPerformed
+        DateRangeDialog dateDialog = new DateRangeDialog(this);
+        dateDialog.setVisible(true);
+
+        if (!dateDialog.isConfirmed()) {
+            return; // User cancelled
+        }
+
+        Date fromDate = dateDialog.getFromDate();
+        Date toDate = dateDialog.getToDate();
+
+        if (fromDate == null || toDate == null) {
+            JOptionPane.showMessageDialog(this, "Please select a valid date range.");
+            return;
+        }
+
+        if (fromDate.after(toDate)) {
+            JOptionPane.showMessageDialog(this, "Invalid date range!\n'From' date must not be after 'To' date.", "Date Range Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        LocalDate startDate = fromDate.toInstant().atZone(TimeZone.getDefault().toZoneId()).toLocalDate();
+        LocalDate endDate = toDate.toInstant().atZone(TimeZone.getDefault().toZoneId()).toLocalDate();
+
+            // Now prepare attendance map
+            Map<String, String[]> attendanceMap = new HashMap<>();
+            SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy");
+
+            try {
+                String userCsvFile = "src/com/csv/DTR/" + currentUser.getuEmpId() + ".csv";
+                BufferedReader br = new BufferedReader(new FileReader(userCsvFile));
+
+                String line;
+                boolean isFirstLine = true;
+                while ((line = br.readLine()) != null) {
+                    if (isFirstLine) { isFirstLine = false; continue; } // Skip header
+                    String[] entry = line.split(",");
+                    if (entry.length >= 4 && entry[0].equals(currentUser.getuEmpId())) {
+                        String logDate = entry[1].trim();
+                        String clockIn = entry[2].trim();
+                        String clockOut = entry[3].trim();
+                        String duration = (entry.length >= 5) ? entry[4].trim() : "";
+                        attendanceMap.put(logDate, new String[]{clockIn, clockOut, duration});
+                    }
+                }
+                br.close();
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, "Error reading attendance: " + e.getMessage());
+                return;
+            }
+
+            // Now loop from startDate to endDate
+            StringBuilder records = new StringBuilder("Date\tClock In\tClock Out\tDuration\tStatus\n\n");
+            long totalMinutes = 0;
+
+            LocalDate currentDay = startDate;
+            while (!currentDay.isAfter(endDate)) {
+                DayOfWeek dayOfWeek = currentDay.getDayOfWeek();
+
+                // Skip Weekend
+                if (dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY) {
+                    String dateStr = (currentDay.getMonthValue()) + "/" + currentDay.getDayOfMonth() + "/" + currentDay.getYear();
+                    String clockIn = "";
+                    String clockOut = "";
+                    String duration = "";
+                    String status = "";
+
+                    if (attendanceMap.containsKey(dateStr)) {
+                        String[] entry = attendanceMap.get(dateStr);
+                        clockIn = entry[0];
+                        clockOut = entry[1];
+
+                            // Compute Duration and determine status
+                            try {
+                                SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a");
+                                Date clockInDate = timeFormat.parse(clockIn);
+                                Date clockOutDate = timeFormat.parse(clockOut);
+
+                                // Compute duration
+                                long durationMs = clockOutDate.getTime() - clockInDate.getTime();
+                                if (durationMs < 0) durationMs += 24 * 60 * 60 * 1000; // Overnight fix
+
+                                long diffMinutes = durationMs / (60 * 1000);
+                                long hours = diffMinutes / 60;
+                                long minutes = diffMinutes % 60;
+
+                                duration = hours + "h " + minutes + "m";
+
+                            // Determine status (Late / Present / Undertime)
+                            Date lateThreshold = timeFormat.parse("8:45 AM");
+
+                            if (clockInDate.after(lateThreshold)) {
+                                status = "Late";
+                            } else {
+                                status = "Present";
+                            }
+
+                            if (diffMinutes < 480) { // Less than 8 hrs → Undertime
+                                status = "Undertime";
+                            }
+
+                            // Accumulate total worked minutes
+                            totalMinutes += diffMinutes;
+                        } catch (Exception ex) {
+                            duration = "Error";
+                            status = "Error";
+                        }
+                    } else {
+                        // No entry → check if day is past or future
+                        if (currentDay.isBefore(LocalDate.now())) {
+                            status = "Absent";
+                        } else {
+                            status = ""; // Future → leave blank
+                        }
+                    }
+
+                    // Append row
+                    records.append(dateStr).append("\t")
+                           .append(clockIn).append("\t")
+                           .append(clockOut).append("\t")
+                           .append(duration).append("\t")
+                           .append(status).append("\n");
+                }
+
+                currentDay = currentDay.plusDays(1);
+            }
+
+            // Total worked time
+            long totalHours = totalMinutes / 60;
+            long totalMins = totalMinutes % 60;
+            records.append("\nTotal Worked Hours: ").append(totalHours).append("h ").append(totalMins).append("m\n");
+
+            // Show Attendance Log
+            JTextArea area = new JTextArea(records.toString());
+            area.setEditable(false);
+            JScrollPane scrollPane = new JScrollPane(area);
+            scrollPane.setPreferredSize(new java.awt.Dimension(600, 400));
+            JOptionPane.showMessageDialog(this, scrollPane, "Attendance Log", JOptionPane.INFORMATION_MESSAGE);
+
+            // Prompt to export
+            int exportOption = JOptionPane.showConfirmDialog(
+                this,
+                "Would you like to export the result?",
+                "Export Attendance Report",
+                JOptionPane.YES_NO_OPTION
+            );
+
+            if (exportOption == JOptionPane.YES_OPTION) {
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+                fileChooser.setDialogTitle("Select Folder to Save Report");
+
+                int chooserResult = fileChooser.showSaveDialog(this);
+                if (chooserResult == JFileChooser.APPROVE_OPTION) {
+                    File selectedDir = fileChooser.getSelectedFile();
+                    generateAttendanceReport(selectedDir, Date.from(startDate.atStartOfDay(TimeZone.getDefault().toZoneId()).toInstant()),
+                                                      Date.from(endDate.atStartOfDay(TimeZone.getDefault().toZoneId()).toInstant()));
+                }
+            }
+    }//GEN-LAST:event_jButton7ActionPerformed
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(HomePage.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(HomePage.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(HomePage.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(HomePage.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new HomePage().setVisible(true);
+            }
+        });
+    }
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jButton2;
+    private javax.swing.JButton jButton3;
+    private javax.swing.JButton jButton4;
+    private javax.swing.JButton jButton5;
+    private javax.swing.JButton jButton6;
+    private javax.swing.JButton jButton7;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel10;
+    private javax.swing.JLabel jLabel11;
+    private javax.swing.JLabel jLabel12;
+    private javax.swing.JLabel jLabel14;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
+    private javax.swing.JLabel jLabel9;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JTextArea jTextArea1;
+    // End of variables declaration//GEN-END:variables
+
+    public static class LoginForm extends JFrame {
+
+        // ────── CUSTOM FIELDS ─────────────────────────────────────────────────────
+        /** CSV‐backed username/password store */
+        private Map<String, String> credentials = new HashMap<>();
+        // ────────────────────────────────────────────────────────────────────────────
+
+        /** Creates new form LoginUI */
+        public LoginForm() {
+            initComponents();
+            // generated code – sets up jTextField1, jPasswordField1, etc.
+            // placeholder & focus logic goes here
+            jTextField1.setForeground(Color.GRAY);
+            // … rest of that FocusListener code …
+            jPasswordField1.setForeground(Color.GRAY);
+            // … rest of the password FocusListener code …
+            // 1) Load credentials from root‐level CSV
+            loadCredentialsFromCSV("UserLogIns.csv");
+            // 2) Hide the spinner until login is attempted
+            jProgressBar1.setVisible(false);
+            // 3) Single‐Enter to click Login
+            getRootPane().setDefaultButton(jButton1);
+            // 4) Tooltips for format hints
+            jTextField1.setToolTipText("Format: EmployeeNumber\n(e.g. 000000)");
+            jPasswordField1.setToolTipText("Format: NameInitials+Emp#+BirthYear!\n(e.g. JR100351861!)");
+            // in LoginUI() constructor, after initComponents():
+            // Make the field show a gray "USERNAME" placeholder
+            jTextField1.setForeground(Color.GRAY);
+            jTextField1.setText("USERNAME");
+            jTextField1.addFocusListener(new FocusAdapter() {
+                @Override
+                public void focusGained(FocusEvent e) {
+                    if (jTextField1.getText().equals("USERNAME")) {
+                        jTextField1.setText("");
+                        jTextField1.setForeground(Color.BLACK);
+                    }
+                }
+
+                @Override
+                public void focusLost(FocusEvent e) {
+                    if (jTextField1.getText().isEmpty()) {
+                        jTextField1.setForeground(Color.GRAY);
+                        jTextField1.setText("USERNAME");
+                    }
+                }
+            });
+            // Do the same for password, but manage echo char so placeholder is visible:
+            jPasswordField1.setForeground(Color.GRAY);
+            jPasswordField1.setEchoChar((char) 0); // show text
+            jPasswordField1.setText("PASSWORD");
+            jPasswordField1.addFocusListener(new FocusAdapter() {
+                @Override
+                public void focusGained(FocusEvent e) {
+                    String pwd = new String(jPasswordField1.getPassword());
+                    if (pwd.equals("PASSWORD")) {
+                        jPasswordField1.setText("");
+                        jPasswordField1.setForeground(Color.BLACK);
+                        jPasswordField1.setEchoChar('\u2022'); // or '*'
+                    }
+                }
+
+                @Override
+                public void focusLost(FocusEvent e) {
+                    String pwd = new String(jPasswordField1.getPassword());
+                    if (pwd.isEmpty()) {
+                        jPasswordField1.setForeground(Color.GRAY);
+                        jPasswordField1.setEchoChar((char) 0); // show placeholder
+                        jPasswordField1.setText("PASSWORD");
+                    }
+                }
+            });
+        }
+
+        /**
+         * This method is called from within the constructor to initialize the form.
+         * WARNING: Do NOT modify this code. The content of this method is always
+         * regenerated by the Form Editor.
+         */
+        @SuppressWarnings(value = "unchecked")
+        private void initComponents() {
+            jScrollPane1 = new JScrollPane();
+            jTextArea1 = new JTextArea();
+            jLabel1 = new JLabel();
+            jLabel2 = new JLabel();
+            jLabel4 = new JLabel();
+            jLabel5 = new JLabel();
+            jPasswordField1 = new JPasswordField();
+            jTextField1 = new JTextField();
+            jButton1 = new JButton();
+            jProgressBar1 = new JProgressBar();
+            jLabel3 = new JLabel();
+            jLabel6 = new JLabel();
+            jLabel7 = new JLabel();
+            jLabel8 = new JLabel();
+            jTextArea1.setColumns(20);
+            jTextArea1.setRows(5);
+            jScrollPane1.setViewportView(jTextArea1);
+            setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+            setResizable(false);
+            jLabel1.setIcon(new ImageIcon(getClass().getResource("/com/gui/images/LogInIcons/Title.png"))); // NOI18N
+            jLabel1.setText("jLabel1");
+            jLabel2.setIcon(new ImageIcon(getClass().getResource("/com/gui/images/LogInIcons/logo.png"))); // NOI18N
+            jLabel2.setLabelFor(jLabel2);
+            jLabel2.setText("MENU");
+            jLabel4.setHorizontalAlignment(SwingConstants.LEFT);
+            jLabel4.setIcon(new ImageIcon(getClass().getResource("/com/LoginUI/images/username.png"))); // NOI18N
+            jLabel4.setLabelFor(jTextField1);
+            jLabel4.setToolTipText("Format: FLastNameEmployeeNumber (ex. JRizal00001) ");
+            jLabel5.setIcon(new ImageIcon(getClass().getResource("/com/LoginUI/images/password.png"))); // NOI18N
+            jPasswordField1.setHorizontalAlignment(JTextField.CENTER);
+            jPasswordField1.setToolTipText("");
+            jTextField1.setHorizontalAlignment(JTextField.CENTER);
+            jTextField1.setToolTipText("");
+            jButton1.setIcon(new ImageIcon(getClass().getResource("/com/LoginUI/images/login.png"))); // NOI18N
+            jButton1.setText("Login");
+            jButton1.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent evt) {
+                    jButton1ActionPerformed(evt);
+                }
+            });
+            jLabel3.setIcon(new ImageIcon(getClass().getResource("/com/gui/images/password.png"))); // NOI18N
+            jLabel3.setToolTipText("Format: 5 DigitEmployee # (ex. 00000))");
+            jLabel6.setIcon(new ImageIcon(getClass().getResource("/com/gui/images/login.png"))); // NOI18N
+            jLabel6.setToolTipText("Format: firstnameinitial+LastName (ex. fLast)");
+            jLabel7.setHorizontalAlignment(SwingConstants.CENTER);
+            jLabel7.setIcon(new ImageIcon(getClass().getResource("/com/gui/images/LogInIcons/login.png"))); // NOI18N
+            jLabel7.setLabelFor(jLabel7);
+            jLabel8.setHorizontalAlignment(SwingConstants.CENTER);
+            jLabel8.setIcon(new ImageIcon(getClass().getResource("/com/gui/images/LogInIcons/password.png"))); // NOI18N
+            jLabel8.setLabelFor(jLabel8);
+            GroupLayout layout = new GroupLayout(getContentPane());
+            getContentPane().setLayout(layout);
+            layout.setHorizontalGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING).addGroup(layout.createSequentialGroup().addGap(65, 65, 65).addComponent(jLabel4).addGap(204, 204, 204).addComponent(jLabel5).addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)).addGroup(GroupLayout.Alignment.TRAILING, layout.createSequentialGroup().addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE).addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING).addGroup(GroupLayout.Alignment.TRAILING, layout.createSequentialGroup().addGroup(layout.createParallelGroup(GroupLayout.Alignment.TRAILING).addComponent(jProgressBar1, GroupLayout.PREFERRED_SIZE, 180, GroupLayout.PREFERRED_SIZE).addGroup(layout.createSequentialGroup().addGroup(layout.createParallelGroup(GroupLayout.Alignment.TRAILING).addGroup(layout.createSequentialGroup().addGroup(layout.createParallelGroup(GroupLayout.Alignment.TRAILING, false).addComponent(jLabel6, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE).addComponent(jLabel3, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)).addGap(18, 18, 18).addComponent(jLabel8)).addComponent(jLabel7)).addPreferredGap(LayoutStyle.ComponentPlacement.RELATED).addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING).addComponent(jTextField1, GroupLayout.PREFERRED_SIZE, 180, GroupLayout.PREFERRED_SIZE).addComponent(jPasswordField1, GroupLayout.PREFERRED_SIZE, 180, GroupLayout.PREFERRED_SIZE)))).addGap(90, 90, 90)).addGroup(GroupLayout.Alignment.TRAILING, layout.createSequentialGroup().addComponent(jButton1).addGap(145, 145, 145)).addGroup(GroupLayout.Alignment.TRAILING, layout.createSequentialGroup().addComponent(jLabel2, GroupLayout.PREFERRED_SIZE, 194, GroupLayout.PREFERRED_SIZE).addPreferredGap(LayoutStyle.ComponentPlacement.RELATED).addComponent(jLabel1, GroupLayout.PREFERRED_SIZE, 190, GroupLayout.PREFERRED_SIZE).addGap(14, 14, 14)))));
+            layout.setVerticalGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING).addGroup(layout.createSequentialGroup().addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE).addComponent(jLabel4).addGap(50, 50, 50).addComponent(jLabel5).addPreferredGap(LayoutStyle.ComponentPlacement.RELATED).addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE).addComponent(jLabel2).addComponent(jLabel1)).addPreferredGap(LayoutStyle.ComponentPlacement.RELATED).addGroup(layout.createParallelGroup(GroupLayout.Alignment.TRAILING).addComponent(jTextField1, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE).addGroup(layout.createSequentialGroup().addComponent(jLabel6).addPreferredGap(LayoutStyle.ComponentPlacement.RELATED).addComponent(jLabel7))).addGap(18, 18, 18).addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING, false).addComponent(jLabel3, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE).addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE).addComponent(jPasswordField1).addComponent(jLabel8))).addPreferredGap(LayoutStyle.ComponentPlacement.RELATED).addComponent(jButton1).addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE).addComponent(jProgressBar1, GroupLayout.PREFERRED_SIZE, 14, GroupLayout.PREFERRED_SIZE).addGap(108, 108, 108)));
+            pack();
+        } // </editor-fold>
+
+        /** Login button handler */
+        private void jButton1ActionPerformed(ActionEvent evt) {
+            // TODO add your handling code here:
+            // show spinner
+            jProgressBar1.setVisible(true);
+            jProgressBar1.setIndeterminate(true);
+            String user = jTextField1.getText().trim();
+            String pass = new String(jPasswordField1.getPassword());
+            if (credentials.containsKey(user) && credentials.get(user).equals(pass)) {
+                // show personalized welcome
+                JOptionPane.showMessageDialog(this, "Login successful.\nWelcome, " + user + "!", "Welcome", JOptionPane.INFORMATION_MESSAGE);
+                // pass the user along to the new frame
+                new HomePage(user).setVisible(true);
+                dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "Invalid username or password.", "Error", JOptionPane.ERROR_MESSAGE);
+                jPasswordField1.setText("");
+            }
+            // hide spinner
+            jProgressBar1.setIndeterminate(false);
+            jProgressBar1.setVisible(false);
+        }
+
+        // ────── CUSTOM METHOD ──────────────────────────────────────────────────────
+        /** Reads username/password pairs from a CSV at the project root */
+        private void loadCredentialsFromCSV(String path) {
+            credentials.clear();
+            try (BufferedReader br = new BufferedReader(new FileReader(path))) {
+                // Skip the header row
+                String line = br.readLine();
+                if (line != null && line.startsWith("\ufeff")) {
+                    // strip BOM if present
+                    line = line.substring(1);
+                }
+                // Now read each data row
+                while ((line = br.readLine()) != null) {
+                    String[] parts = line.split(",");
+                    if (parts.length < 2) {
+                        continue; // malformed row
+                    }
+                    String user = parts[0].trim();
+                    if (user.equalsIgnoreCase("username")) {
+                        continue; // safety skip
+                    }
+                    String pass = parts[1].trim();
+                    credentials.put(user, pass);
+                }
+                System.out.println("Loaded credentials: " + credentials.keySet());
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(this, "Error loading credentials:\n" + ex.getMessage(), "Load Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────────────────
+        /**
+         * @param args the command line arguments
+         */
+        public static void main(String[] args) {
+            /* Set the Nimbus look and feel */
+            //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+            /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+             * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html
+             */
+            try {
+                for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+                    if ("Nimbus".equals(info.getName())) {
+                        UIManager.setLookAndFeel(info.getClassName());
+                        break;
+                    }
+                }
+            } catch (ClassNotFoundException ex) {
+                Logger.getLogger(LoginForm.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (InstantiationException ex) {
+                Logger.getLogger(LoginForm.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (IllegalAccessException ex) {
+                Logger.getLogger(LoginForm.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (UnsupportedLookAndFeelException ex) {
+                Logger.getLogger(LoginForm.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            //</editor-fold>
+            //</editor-fold>
+            /* Create and display the form */
+            EventQueue.invokeLater(new Runnable() {
+                public void run() {
+                    new LoginForm().setVisible(true);
+                }
+            });
+        }
+        // Variables declaration - do not modify
+        private JButton jButton1;
+        private JLabel jLabel1;
+        private JLabel jLabel2;
+        private JLabel jLabel3;
+        private JLabel jLabel4;
+        private JLabel jLabel5;
+        private JLabel jLabel6;
+        private JLabel jLabel7;
+        private JLabel jLabel8;
+        private JPasswordField jPasswordField1;
+        private JProgressBar jProgressBar1;
+        private JScrollPane jScrollPane1;
+        private JTextArea jTextArea1;
+        private JTextField jTextField1;
+        // End of variables declaration
+    }
+}
