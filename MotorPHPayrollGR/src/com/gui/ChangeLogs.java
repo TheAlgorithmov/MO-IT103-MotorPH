@@ -40,7 +40,7 @@ public class ChangeLogs extends javax.swing.JPanel {
     }
 
     public void loadChangeLogs() {
-        tableModel.setRowCount(0); // Clear current table data
+                tableModel.setRowCount(0);
         try (CSVReader reader = new CSVReader(new FileReader("src/com/csv/EmpDataChangeLogs.csv"))) {
             String[] nextLine;
             boolean isHeader = true;
@@ -55,6 +55,7 @@ public class ChangeLogs extends javax.swing.JPanel {
         } catch (IOException | CsvValidationException e) {
             JOptionPane.showMessageDialog(this, "Error loading change logs: " + e.getMessage());
         }
+
     }    
     /**
      * This method is called from within the constructor to initialize the form.

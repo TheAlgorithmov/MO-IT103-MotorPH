@@ -28,6 +28,8 @@ public class User {
     private String uTIN;
     private String uPagIbig;
     private String uAddress;
+    private String uFirstname;
+    private String uLastname;
     
     public User(String uEmpId, String uFirstName, String uLastName, String uDob, String uPosition, String uStatus,
                 String uPhoneNumber, String uImmediateSupervisor, String uBasicSalary, String uHourlyRate,
