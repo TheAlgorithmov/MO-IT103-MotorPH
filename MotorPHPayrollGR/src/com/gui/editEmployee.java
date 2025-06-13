@@ -406,10 +406,26 @@ public class editEmployee extends JPanel {
 
             // === WRITE EmployeeData.csv ===
             try (BufferedWriter bw = new BufferedWriter(new FileWriter("src/com/csv/EmployeeData.csv", true))) {
-                bw.write(id + "," + firstname + "," + lastname + "," + birthday + "," + address + "," + phoneNumber + "," +
-                        sss + "," + philhealth + "," + tin + "," + pagibig + "," + status + "," + position + "," +
-                        immediate + "," + basicSalary + "," + riceSubsidy + "," + phoneAllowance + "," +
-                        clothingAllowance + "," + grossSemi + "," + hourlyRate);
+                bw.write(id + "," +                  // Employee #
+                         firstname + "," +           // First Name
+                         lastname + "," +            // Last Name
+                         birthday + "," +            // Birthday
+                         hourlyRate + "," +          // Hourly Rate
+                         riceSubsidy + "," +         // Rice Subsidy
+                         phoneAllowance + "," +      // Phone Allowance
+                         clothingAllowance + "," +   // Clothing Allowance
+                         status + "," +              // Status
+                         position + "," +            // Position
+                         basicSalary + "," +         // Basic Salary
+                         phoneNumber + "," +         // Phone Number
+                         sss + "," +                 // SSS #
+                         philhealth + "," +          // Philhealth #
+                         tin + "," +                 // TIN #
+                         pagibig + "," +             // Pag-ibig #
+                         immediate + "," +           // Immediate Supervisor
+                         grossSemi + "," +           // Gross Semi-monthly Rate
+                         address                     // Address (last field, no comma after)
+                );
                 bw.newLine();
             } catch (IOException e) {
                 JOptionPane.showMessageDialog(this, "Error writing to EmployeeData.csv: " + e.getMessage());

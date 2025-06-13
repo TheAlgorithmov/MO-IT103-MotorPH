@@ -31,30 +31,33 @@ public class User {
     private String uFirstname;
     private String uLastname;
     
-    public User(String uEmpId, String uFirstName, String uLastName, String uDob, String uPosition, String uStatus,
-                String uPhoneNumber, String uImmediateSupervisor, String uBasicSalary, String uHourlyRate,
-                String uRiceSubsidy, String uPhoneAllowance, String uClothingAllowance, String uGrossSemiRate,
-                String uSSS, String uPhilHealth, String uTIN, String uPagIbig, String uAddress ) {
+        public User(String uEmpId, String uFirstName, String uLastName, String uDob,
+                String uHourlyRate, String uRiceSubsidy, String uPhoneAllowance, String uClothingAllowance,
+                String uStatus, String uPosition, String uBasicSalary, String uPhoneNumber,
+                String uSSS, String uPhilHealth, String uTIN, String uPagIbig,
+                String uImmediateSupervisor, String uGrossSemiRate, String uAddress) {
+
         this.uEmpId = uEmpId;
         this.uFirstName = uFirstName;
         this.uLastName = uLastName;
         this.uDob = uDob;
-        this.uPosition = uPosition;
-        this.uStatus = uStatus;
-        this.uPhoneNumber = uPhoneNumber;
-        this.uImmediateSupervisor = uImmediateSupervisor;
-        this.uBasicSalary = uBasicSalary;
         this.uHourlyRate = uHourlyRate;
         this.uRiceSubsidy = uRiceSubsidy;
         this.uPhoneAllowance = uPhoneAllowance;
         this.uClothingAllowance = uClothingAllowance;
-        this.uGrossSemiRate = uGrossSemiRate;
+        this.uStatus = uStatus;
+        this.uPosition = uPosition;
+        this.uBasicSalary = uBasicSalary;
+        this.uPhoneNumber = uPhoneNumber;
         this.uSSS = uSSS;
         this.uPhilHealth = uPhilHealth;
         this.uTIN = uTIN;
         this.uPagIbig = uPagIbig;
+        this.uImmediateSupervisor = uImmediateSupervisor;
+        this.uGrossSemiRate = uGrossSemiRate;
         this.uAddress = uAddress;
     }
+
         public String getuEmpId() { return uEmpId; }
         public String getuFirstName() { return uFirstName; }
         public String getuLastName() { return uLastName; }
@@ -74,12 +77,4 @@ public class User {
         public String getuTIN() { return uTIN; }
         public String getuPagIbig() { return uPagIbig; }
         public String getuAddress() { return uAddress; }
-
-    String getuFirstname() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    String getuLastname() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
 }
