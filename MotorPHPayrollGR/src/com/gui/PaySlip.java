@@ -273,11 +273,6 @@ public class PaySlip extends JPanel {
 
                 JOptionPane.showMessageDialog(this, "Payslip exported successfully!");
 
-                // After export: Close this window and return to HomePage
-                SwingUtilities.getWindowAncestor(this).dispose();
-                // Uncomment below if you want to return to HomePage (provide currentUser)
-                // new HomePage(currentUser).setVisible(true);
-
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error exporting payslip: " + ex.getMessage());
             }

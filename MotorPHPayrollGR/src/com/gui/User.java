@@ -77,4 +77,20 @@ public class User {
         public String getuTIN() { return uTIN; }
         public String getuPagIbig() { return uPagIbig; }
         public String getuAddress() { return uAddress; }
+        
+        public boolean isLeadership() {
+        switch (uPosition) {
+            case "Chief Executive Officer":
+            case "Chief Operating Officer":
+            case "Chief Finance Officer":
+            case "Chief Marketing Officer":
+            case "IT Operations and Systems":
+            case "Accounting Head":
+            case "HR Manager":
+            case "HR Team Leader":
+                return true;
+            default:
+                return false;
+        }
+  }
 }
