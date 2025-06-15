@@ -20,7 +20,8 @@ import javax.swing.text.*;
 import com.toedter.calendar.JDateChooser;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-
+import java.io.File;
+import java.io.FileWriter;
 
 public class editEmployee extends JPanel {
 
@@ -51,7 +52,46 @@ public class editEmployee extends JPanel {
         } else {
             loadSelectedEmployee(editingEmpID);
         }
-    }
+            applyFieldRestrictions();
+        }
+        /**
+         * If the user is *not* in a leadership role, disable every field
+         * except Address and Phone Number.
+         */
+        private void applyFieldRestrictions() {
+            // assume User has boolean isLeadership()
+            if (!currentUser.isLeadership()) {
+
+                // --- Text fields to keep enabled ---
+                txtAddress.setEnabled(true);
+                txtPhoneNumber.setEnabled(true);
+
+                // --- Disable everything else ---
+                txtFirstname.setEnabled(false);
+                txtLastname .setEnabled(false);
+                dateChooserBirthday.setEnabled(false);
+
+                txtSSS   .setEnabled(false);
+                txtPhilHealth.setEnabled(false);
+                txtTin   .setEnabled(false);
+                txtPagIbig  .setEnabled(false);
+
+                cmbStatus   .setEnabled(false);
+                cmbPosition .setEnabled(false);
+                cmbSupervisor.setEnabled(false);
+
+                txtBasicSalary           .setEnabled(false);
+                txtRiceSubsidy           .setEnabled(false);
+                txtPhoneAllowance        .setEnabled(false);
+                txtClothingAllowance     .setEnabled(false);
+                txtGrossSemiMonthlyRate  .setEnabled(false);
+                txtHourlyRate            .setEnabled(false);
+
+                // The EmpNum field is already non-editable,
+                // and your “Add/Update” button can stay enabled
+                // so that Address & Phone changes still get saved.
+            }
+        }
 
     private void initComponents() {
         JPanel formPanel = new JPanel(new GridBagLayout());
@@ -216,28 +256,51 @@ public class editEmployee extends JPanel {
         // Supervisor dropdown
         cmbSupervisor.removeAllItems();
         Set<String> leaders = new TreeSet<>();
+
         try (BufferedReader br = new BufferedReader(new FileReader("src/com/csv/EmployeeData.csv"))) {
             String line;
             boolean header = true;
+
             while ((line = br.readLine()) != null) {
-                String[] data = line.split(",");
+                line = line.trim();
+                if (line.isEmpty()) {
+                    // skip blank lines
+                    continue;
+                }
+
+                String[] data = line.split(",", -1);
+
                 if (header) {
+                    // skip the header row
                     header = false;
                     continue;
                 }
-                String role = data[9].trim(); // Position column index = 9
-                String fullName = data[1] + " " + data[2]; // FirstName + LastName
 
-                if (role.equals("HR Manager") || role.equals("HR Team Leader") ||
-                    role.equals("Chief Executive Officer") || role.equals("Chief Operating Officer") ||
-                    role.equals("Chief Finance Officer") || role.equals("Chief Marketing Officer") ||
-                    role.equals("IT Operations and Systems") || role.equals("Accounting Head")) {
+                // **NEW SAFETY CHECK**  
+                if (data.length < 10) {
+                    // not enough columns to even read data[9]
+                    continue;
+                }
+
+                String role = data[9].trim();               // now safe!
+                String fullName = data[1].trim() + " " + data[2].trim();
+
+                if (   role.equals("HR Manager")
+                    || role.equals("HR Team Leader")
+                    || role.equals("Chief Executive Officer")
+                    || role.equals("Chief Operating Officer")
+                    || role.equals("Chief Finance Officer")
+                    || role.equals("Chief Marketing Officer")
+                    || role.equals("IT Operations and Systems")
+                    || role.equals("Accounting Head")) {
                     leaders.add(fullName);
                 }
             }
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error reading EmployeeData.csv for supervisors: " + e.getMessage());
         }
+
+        // repopulate the combo
         for (String leader : leaders) {
             cmbSupervisor.addItem(leader);
         }
@@ -458,6 +521,33 @@ public class editEmployee extends JPanel {
             } catch (IOException e) {
                 JOptionPane.showMessageDialog(this, "Error writing to EmpDataChangeLogs.csv: " + e.getMessage());
                 return;
+            }
+
+                // === CREATE DTR CSV FILE ===
+            try {
+                // Ensure the DTR folder exists
+                File dtrDir = new File("src/com/csv/DTR");
+                if (!dtrDir.exists()) {
+                    dtrDir.mkdirs();
+                }
+
+                // Create the new empID.csv file
+                File dtrFile = new File(dtrDir, id + ".csv");
+                // Only create if it doesn't already exist
+                if (!dtrFile.exists()) {
+                    try (BufferedWriter dtrBw = new BufferedWriter(new FileWriter(dtrFile))) {
+                        dtrBw.write("Employee #,Date,Log In,Log Out,First Name,Last Name");
+                        dtrBw.newLine();
+                    }
+                }
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Error creating DTR file for employee " + id + ": " + ex.getMessage(),
+                    "I/O Error",
+                    JOptionPane.ERROR_MESSAGE
+                );
+                // you can choose to return here if you want to abort the add
             }
 
             JOptionPane.showMessageDialog(this, "Record added successfully!");

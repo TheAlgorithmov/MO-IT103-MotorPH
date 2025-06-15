@@ -22,6 +22,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.table.TableCellRenderer;
 
 public class EmployeeManagement extends JFrame {
 
@@ -124,6 +125,18 @@ public class EmployeeManagement extends JFrame {
         };
 
         tblPayroll = new JTable(tableModel);
+        // Auto-resize columns to fit content
+        tblPayroll.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+
+        for (int column = 0; column < tblPayroll.getColumnCount(); column++) {
+            int width = 100; // Minimum width
+            for (int row = 0; row < tblPayroll.getRowCount(); row++) {
+                TableCellRenderer renderer = tblPayroll.getCellRenderer(row, column);
+                Component comp = tblPayroll.prepareRenderer(renderer, row, column);
+                width = Math.max(comp.getPreferredSize().width + 10, width);
+            }
+            tblPayroll.getColumnModel().getColumn(column).setPreferredWidth(width);
+        }
 
         // Mouse hover tooltip logic
         tblPayroll.addMouseMotionListener(new MouseMotionAdapter() {

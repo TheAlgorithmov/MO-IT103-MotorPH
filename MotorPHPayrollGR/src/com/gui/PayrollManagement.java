@@ -2,188 +2,107 @@
  *
  * @author ongoj & Miles
  */
+/**
+ * PayrollManagement.java - Payroll Approval with Status Controls and Net Pay Display
+ */
 package com.gui;
 
 import com.payroll.MotorPHPayrollG3;
 import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
+import com.opencsv.exceptions.CsvValidationException;
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.io.FileReader;
-import java.time.LocalDate;
-import java.time.Month;
-import java.time.YearMonth;
+import java.awt.event.*;
+import java.io.*;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
-import java.time.format.DateTimeParseException;
 import java.util.*;
-import com.gui.PaySlip;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
+public class PayrollManagement extends JFrame {
+    private User currentUser;
+    private JTable employeeTable;
+    private DefaultTableModel tableModel;
+    private TableRowSorter<DefaultTableModel> sorter;
+    private JComboBox<String> payPeriodComboBox;
+    private LocalDate startDate, endDate;
 
-        /**
-         * PayrollManagement
-         * Dynamically loads pay periods for the logged-in employee based on time entries in EmployeeTimeEntries.csv.
-         */
-        public class PayrollManagement extends JFrame {
+    public PayrollManagement(User currentUser) throws CsvValidationException {
+        this.currentUser = currentUser;
+        setTitle("Payroll Management System");
+        setSize(1400, 600);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setLocationRelativeTo(null);
 
-            private User currentUser;
-            private JComboBox<String> payPeriodComboBox;
-            private LocalDate startDate, endDate;
-            private Object[] payrollReport;
-            private boolean isValidated = false;
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        payPeriodComboBox = createPayPeriodComboBoxFromCSV();
+        JButton approveAllButton = new JButton("Approve All Payrolls");
+        JButton calcButton = new JButton("Calculate Pay");
+        JButton reportButton = new JButton("Generate Report");
+        JButton auditTrailButton = new JButton("View Audit Trail");
+        JTextField searchField = new JTextField(15);
 
-            /**
-             * Constructs the Payroll Management window for the given user.
-             * Dynamically loads pay periods from CSV for the current user.
-             */
-            public PayrollManagement(User currentUser) {
-                    this.currentUser = currentUser;
-            setTitle("Payroll Management System");
-            setSize(420, 220);
-            setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-            setResizable(false);
-            setLocationRelativeTo(null);
-
-            // Panel and layout setup
-            JPanel panel = new JPanel(new GridBagLayout());
-            panel.setBackground(new Color(242, 243, 247)); // Soft background color
-            panel.setBorder(BorderFactory.createEmptyBorder(15, 25, 15, 25)); // Padding
-
-            GridBagConstraints gbc = new GridBagConstraints();
-            gbc.insets = new Insets(10, 10, 10, 10);
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-
-            // Row 1: Pay Period
-            gbc.gridx = 0; gbc.gridy = 0; gbc.anchor = GridBagConstraints.EAST;
-            JLabel lblPayPeriod = new JLabel("Pay Period:");
-            panel.add(lblPayPeriod, gbc);
-
-            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST;
-            payPeriodComboBox = createPayPeriodComboBoxFromCSV();
-            panel.add(payPeriodComboBox, gbc);
-
-            // Row 2: Employee ID
-            gbc.gridx = 0; gbc.gridy = 1; gbc.anchor = GridBagConstraints.EAST;
-            JLabel lblEmpId = new JLabel("Employee ID:");
-            panel.add(lblEmpId, gbc);
-
-            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST;
-            JTextField empIdField = new JTextField(15);
-            empIdField.setEditable(false);
-            empIdField.setText(currentUser.getuEmpId());
-            panel.add(empIdField, gbc);
-
-            // Row 3: Buttons, centered
-            gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2; gbc.anchor = GridBagConstraints.CENTER;
-            JButton btnSubmit = new JButton("Submit");
-            JButton btnCancel = new JButton("Cancel");
-            JPanel btnPanel = new JPanel();
-            btnPanel.setOpaque(false);
-            btnPanel.add(btnCancel);
-            btnPanel.add(Box.createHorizontalStrut(20));
-            btnPanel.add(btnSubmit);
-            panel.add(btnPanel, gbc);
-
-            setContentPane(panel);
-
-            // Button actions (AFTER layout)
-            btnSubmit.addActionListener((ActionEvent e) -> {
-                validateInputs();
-                if (isValidated) {
-                    loadPaySlip();
-                    dispose();
-                }
-            });
-
-            btnCancel.addActionListener(e -> {
-                new HomePage(currentUser).setVisible(true);
-                dispose();
-            });
-
-            addWindowListener(new java.awt.event.WindowAdapter() {
-                @Override
-                public void windowClosing(java.awt.event.WindowEvent e) {
-                    new HomePage(currentUser).setVisible(true);
-                    dispose();
-                }
-            });
-
-            setVisible(true);
-            
-            JButton btnBack = new JButton("Back to Dashboard");
-            btnBack.addActionListener(e -> {
-                JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
-                topFrame.setContentPane(new EmployeeManagement(currentUser));
-                topFrame.revalidate();
-                topFrame.repaint();
-            });
-
-    }
-
-    /**
-     * Dynamically generates pay periods based on the user's time entries in the CSV.
-     * Only periods for which the user has a log are shown.
-     */
-    private JComboBox<String> createPayPeriodComboBoxFromCSV() {
-        // Load only this employee's DTR/EmpID.csv
-        String csvFile = "src/com/csv/DTR/" + currentUser.getuEmpId() + ".csv";
-        Set<String> payPeriods = new LinkedHashSet<>(); // Unique, ordered set
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("M/d/yyyy"); // Adjust to CSV format
-
-        try (CSVReader reader = new CSVReader(new FileReader(csvFile))) {
-            String[] nextLine;
-            boolean isFirstLine = true;
-            while ((nextLine = reader.readNext()) != null) {
-                if (isFirstLine) { isFirstLine = false; continue; } // skip header
-
-                // Your DTR CSV is: EmpID, Log Date, Log In, Log Out, Duration
-                String logDateStr = nextLine[1].trim(); // Column 2 = Log Date
-                if (logDateStr.isEmpty()) {
-                    continue; // skip empty rows
-                }
-                LocalDate logDate = LocalDate.parse(logDateStr, dateFormatter);
-                int day = logDate.getDayOfMonth();
-                YearMonth ym = YearMonth.from(logDate);
-                String monthName = ym.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH);
-                int year = ym.getYear();
-                int lastDay = ym.lengthOfMonth();
-
-                String label, payday;
-                if (day <= 15) {
-                    label = "1-15 " + monthName + " " + year;
-                    payday = "(Payday: " + monthName + " " + lastDay + ")";
-                } else {
-                    label = "16-" + lastDay + " " + monthName + " " + year;
-                    YearMonth nextMonth = ym.plusMonths(1);
-                    String nextMonthName = nextMonth.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH);
-                    payday = "(Payday: " + nextMonthName + " 15)";
-                }
-                payPeriods.add(label + " " + payday);
-
+        String[] columns = {"EmpID", "First Name", "Last Name", "DTR Status", "DTR Approved Date", "Payroll Status", "Payroll Approved Date", "NetPay", "Payslip Ready", "Generate Payslip"};
+        tableModel = new DefaultTableModel(columns, 0) {
+            public boolean isCellEditable(int row, int col) {
+                return col == 8 || col == 9; // Dropdown and export only
             }
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error loading time entries: " + e.getMessage());
-        }
+        };
+        employeeTable = new JTable(tableModel);
+        sorter = new TableRowSorter<>(tableModel);
+        employeeTable.setRowSorter(sorter);
 
-        if (payPeriods.isEmpty()) payPeriods.add("No pay periods found");
+        employeeTable.getColumn("Payslip Ready").setCellEditor(new DefaultCellEditor(new JComboBox<>(new String[]{"Approved", "Declined", "Pending", "Incomplete"})));
+        employeeTable.getColumn("Generate Payslip").setCellRenderer(new ButtonRenderer());
+        employeeTable.getColumn("Generate Payslip").setCellEditor(new ButtonEditor(new JCheckBox()));
 
-        return new JComboBox<>(payPeriods.toArray(new String[0]));
+        PayrollManagementHelper helper = new PayrollManagementHelper(employeeTable, payPeriodComboBox, currentUser);
+
+        approveAllButton.addActionListener(e -> helper.approveAllPayrolls());
+        calcButton.addActionListener(e -> calculateNetPays());
+        reportButton.addActionListener(e -> helper.exportToCSVWithChooser());
+        auditTrailButton.addActionListener(e -> helper.showPayrollAuditTrail());
+
+        searchField.getDocument().addDocumentListener(new DocumentListener() {
+            public void changedUpdate(DocumentEvent e) { filter(); }
+            public void removeUpdate(DocumentEvent e) { filter(); }
+            public void insertUpdate(DocumentEvent e) { filter(); }
+            public void filter() {
+                String text = searchField.getText();
+                if (text.trim().length() == 0) {
+                    sorter.setRowFilter(null);
+                } else {
+                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
+                }
+            }
+        });
+
+        topPanel.add(new JLabel("Pay Period:"));
+        topPanel.add(payPeriodComboBox);
+        topPanel.add(calcButton);
+        topPanel.add(approveAllButton);
+        topPanel.add(reportButton);
+        topPanel.add(auditTrailButton);
+        topPanel.add(new JLabel("Search:"));
+        topPanel.add(searchField);
+
+        loadTableFromCSV();
+        add(topPanel, BorderLayout.NORTH);
+        add(new JScrollPane(employeeTable), BorderLayout.CENTER);
     }
-    /**
-     * Validates the pay period selection and computes the exact date range to be used for payroll.
-     * Parses the dropdown label (e.g., "1-15 June 2025 (Payday: June 30)").
-     */
-    private void validateInputs() {
+
+    private void calculateNetPays() {
         String selected = (String) payPeriodComboBox.getSelectedItem();
         if (selected == null || selected.equals("No pay periods found")) {
-            showErrorDialog("Please select a valid pay period.");
-            isValidated = false;
-          
+            JOptionPane.showMessageDialog(this, "Please select a pay period first.");
             return;
         }
-
         try {
-            // "1-15 June 2025 (Payday: June 30)" -> [0]="1-15", [1]="June", [2]="2025", ...
             String[] mainParts = selected.split(" ");
             String[] range = mainParts[0].split("-");
             int startDay = Integer.parseInt(range[0]);
@@ -192,80 +111,103 @@ import com.gui.PaySlip;
             int year = Integer.parseInt(mainParts[2]);
 
             DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("MMMM", Locale.ENGLISH);
-            Month month;
-            try {
-                month = Month.from(monthFormatter.parse(monthName));
-            } catch (DateTimeParseException ex) {
-                showErrorDialog("Invalid month in pay period: " + monthName);
-                isValidated = false;
-                return;
-            }
+            Month month = Month.from(monthFormatter.parse(monthName));
 
             startDate = LocalDate.of(year, month.getValue(), startDay);
             endDate = LocalDate.of(year, month.getValue(), endDay);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error parsing selected pay period: " + e.getMessage());
+            return;
+        }
 
-            // Run payroll calculation
-            payrollReport = MotorPHPayrollG3.runPayrollSearch(startDate, endDate, currentUser.getuEmpId());
-            if (payrollReport == null || payrollReport.length < 22) {
-                showErrorDialog("Payroll report has only " + (payrollReport == null ? 0 : payrollReport.length) + " fields. Expected 22.");
-                isValidated = false;
-                return;
+        for (int i = 0; i < tableModel.getRowCount(); i++) {
+            String dtrStatus = tableModel.getValueAt(i, 3).toString();
+            if (!dtrStatus.equalsIgnoreCase("Approved")) continue;
+            String empId = tableModel.getValueAt(i, 0).toString();
+            Object[] result = MotorPHPayrollG3.runPayrollSearch(startDate, endDate, empId);
+            if (result != null && result.length == 22) {
+                tableModel.setValueAt(String.valueOf(result[21]), i, 7);
             }
-            isValidated = true;
-        } catch (Exception ex) {
-            showErrorDialog("Error parsing pay period: " + ex.getMessage());
-            isValidated = false;
-        }
-        revalidate();
-        repaint();
-    }
-
-    /**
-     * Helper: get the pay date based on the selected period.
-     */
-    private LocalDate getPayDateForPeriod() {
-        if (startDate.getDayOfMonth() == 1) {
-            YearMonth ym = YearMonth.of(startDate.getYear(), startDate.getMonth());
-            return LocalDate.of(ym.getYear(), ym.getMonthValue(), ym.lengthOfMonth());
-        } else {
-            LocalDate nextMonth15 = startDate.plusMonths(1).withDayOfMonth(15);
-            return nextMonth15;
         }
     }
 
-    /**
-     * Launches the payslip dialog for the computed period and user.
-     */
-    private void loadPaySlip() {
-    if (payrollReport == null || payrollReport.length < 22) {
-        showErrorDialog("Payroll data is missing or incomplete.");
-        return;
+    private JComboBox<String> createPayPeriodComboBoxFromCSV() {
+        String csvFile = "src/com/csv/DTR/" + currentUser.getuEmpId() + ".csv";
+        Set<String> payPeriods = new LinkedHashSet<>();
+        DateTimeFormatter df = DateTimeFormatter.ofPattern("M/d/yyyy");
+        try (CSVReader reader = new CSVReader(new FileReader(csvFile))) {
+            String[] line; reader.readNext();
+            while ((line = reader.readNext()) != null) {
+                LocalDate d = LocalDate.parse(line[1].trim(), df);
+                int day = d.getDayOfMonth();
+                YearMonth ym = YearMonth.from(d);
+                String m = ym.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH);
+                int y = ym.getYear();
+                int end = ym.lengthOfMonth();
+                if (day <= 15) payPeriods.add("1-15 " + m + " " + y + " (Payday: " + m + " " + end + ")");
+                else payPeriods.add("16-" + end + " " + m + " " + y + " (Payday: " + ym.plusMonths(1).getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH) + " 15)");
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error reading pay periods: " + e.getMessage());
+        }
+        return new JComboBox<>(payPeriods.toArray(new String[0]));
     }
-    SwingUtilities.invokeLater(() -> {
-        PaySlip slipPanel = new PaySlip(payrollReport, startDate, endDate, getPayDateForPeriod(), currentUser);
-        JDialog dialog = new JDialog((Frame) null, "Pay Slip", true);
-        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-        dialog.setContentPane(slipPanel);
-        // When closed, return to homepage
-        dialog.addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-            public void windowClosed(java.awt.event.WindowEvent e) {
-                if (currentUser != null) {
-                    new HomePage(currentUser).setVisible(true);
+
+    private void loadTableFromCSV() throws CsvValidationException {
+        try (CSVReader reader = new CSVReader(new FileReader("src/com/csv/DTR/DTRPayrollStatus.csv"))) {
+            String[] row; reader.readNext();
+            while ((row = reader.readNext()) != null) {
+                String[] fullRow = Arrays.copyOf(row, 10);
+                fullRow[7] = ""; // NetPay
+                fullRow[8] = "Pending"; // Payslip ready dropdown
+                fullRow[9] = "Generate Payslip"; // Button label
+                tableModel.addRow(fullRow);
+            }
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Error loading table: " + e.getMessage());
+        }
+    }
+
+    class ButtonRenderer extends JButton implements javax.swing.table.TableCellRenderer {
+        public ButtonRenderer() { setOpaque(true); }
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
+            setText((value == null) ? "" : value.toString()); return this;
+        }
+    }
+
+    class ButtonEditor extends DefaultCellEditor {
+        private JButton button;
+        private String label;
+        private boolean isPushed;
+        private int row;
+
+        public ButtonEditor(JCheckBox checkBox) {
+            super(checkBox);
+            button = new JButton();
+            button.setOpaque(true);
+            button.addActionListener(e -> fireEditingStopped());
+        }
+        public Component getTableCellEditorComponent(JTable table, Object val, boolean isSelected, int row, int col) {
+            this.label = val == null ? "" : val.toString();
+            this.button.setText(label); this.isPushed = true; this.row = row;
+            return button;
+        }
+        public Object getCellEditorValue() {
+            if (isPushed && "Generate Payslip".equalsIgnoreCase(label)) {
+                String empId = tableModel.getValueAt(row, 0).toString();
+                String payrollStatus = String.valueOf(tableModel.getValueAt(row, 5));
+                String netPay = String.valueOf(tableModel.getValueAt(row, 7));
+
+                if (!"Approved".equalsIgnoreCase(payrollStatus)) {
+                    JOptionPane.showMessageDialog(null, "Cannot generate payslip. Please approve payroll first for EmpID: " + empId);
+                } else if (netPay == null || netPay.isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "NetPay is missing. Please calculate payroll first for EmpID: " + empId);
+                } else {
+                    JOptionPane.showMessageDialog(null, "This would now call PaySlip.java to generate PDF for EmpID: " + empId);
                 }
             }
-        });
-        dialog.pack();
-        dialog.setLocationRelativeTo(null);
-        dialog.setVisible(true);
-    });
-}
-
-    /**
-     * Utility for showing error dialogues.
-     */
-    private void showErrorDialog(String message) {
-        JOptionPane.showMessageDialog(this, message, "Input Error", JOptionPane.ERROR_MESSAGE);
+            isPushed = false;
+            return label;
+        }
     }
-    
 }
