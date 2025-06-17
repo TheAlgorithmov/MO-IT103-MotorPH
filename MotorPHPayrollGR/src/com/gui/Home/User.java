@@ -2,7 +2,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package com.gui;
+package com.gui.Home;
 
 /**
  *
@@ -85,12 +85,52 @@ public class User {
             case "Chief Finance Officer":
             case "Chief Marketing Officer":
             case "IT Operations and Systems":
+            case "Account Manager":
             case "Accounting Head":
             case "HR Manager":
             case "HR Team Leader":
+            case "Payroll Team Leader":
+            case "Account Team Leader":
+            case "Payroll Manager":
                 return true;
             default:
                 return false;
         }
   }
+            public boolean isFinanceRole() {
+        switch (uPosition) {
+            case "Chief Finance Officer":
+            case "Payroll Manager":
+            case "Payroll Team Leader":
+            case "Payroll Rank and File":
+                return true;
+            default:
+                return false;
+        }
+    }
+
+            public boolean isITRole() {
+                return "IT Operations and Systems".equals(uPosition);
+            }
+
+            public boolean isHRRole() {
+                switch (uPosition) {
+                    case "HR Manager":
+                    case "HR Team Leader":
+                    case "HR Rank and File":
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+
+            /** Leadership, IT or HR can access full Employee Management */
+            public boolean canAccessEmployeeManagement() {
+                return isLeadership() || isITRole() || isHRRole();
+            }
+
+            /** Only finance/payroll positions can access Payroll Management */
+            public boolean canAccessPayrollManagement() {
+                return isFinanceRole();
+            }
 }

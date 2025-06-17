@@ -1,3 +1,10 @@
 Action,User,TargetEmpID,Field,OldValue,NewValue,DateTime,Status,Notes
-
-ADD,Super Admin,10000,ALL FIELDS,N/A,New Record,2025-06-13 00:03:20,Approved,New employee added
+ADD,Super Admin,10000,ALL FIELDS,N/A,New Record,6/13/2025 0:03,Approved,New employee added
+ADD,Roderick Alvaro,10000,ALL FIELDS,N/A,New Record,2025-06-15 23:11:54,Approved,New employee added
+ADD,Super Admin,10035,ALL FIELDS,N/A,New Record,2025-06-16 22:56:59,Approved,New employee added
+DELETE,Super Admin,,ALL FIELDS,N/A,Employee Deleted,2025-06-16 22:57:15,Approved,Record removed
+UPDATE,Super Admin,10035,ALL FIELDS,N/A,Record modified,2025-06-16 23:14:26,Approved,Employee data updated
+DELETE,Super Admin,10035,ALL FIELDS,N/A,Employee Deleted,2025-06-16 23:15:45,Approved,Record removed
+UPDATE,Super Admin,10000,ALL FIELDS,N/A,Record modified,2025-06-16 23:20:46,Approved,Employee data updated
+ADD,Super Admin,10035,ALL FIELDS,N/A,New Record,2025-06-16 23:22:29,Approved,New employee added
+DELETE,Super Admin,10035,ALL FIELDS,N/A,Employee Deleted,2025-06-16 23:24:29,Approved,Record removed

@@ -1,5 +1,6 @@
-package com.gui;
+package com.gui.Payroll;
 
+import com.gui.Home.User;
 import com.opencsv.CSVWriter;
 import javax.swing.*;
 import java.awt.*;

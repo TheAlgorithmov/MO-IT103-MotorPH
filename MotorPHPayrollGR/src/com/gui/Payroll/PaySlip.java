@@ -6,8 +6,9 @@
  *
  * @author ongoj
  */
-package com.gui;
+package com.gui.Payroll;
 
+import com.gui.Home.User;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;

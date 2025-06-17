@@ -7,7 +7,7 @@
  * @author ongoj
  */
  
-package com.gui;
+package com.gui.Home;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvValidationException;
 import javax.swing.*;
