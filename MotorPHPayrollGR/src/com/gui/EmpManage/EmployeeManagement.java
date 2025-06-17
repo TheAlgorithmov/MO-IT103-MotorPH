@@ -7,39 +7,49 @@
  * @author Leo Azarcon & ongoj
  */
 
-package com.gui;
+package com.gui.EmpManage;
+
+import com.gui.Home.ChangeLogs;
+import com.gui.Home.LoginCredentialsView;
+import com.gui.Home.User;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
+import com.opencsv.exceptions.CsvException;
+import com.opencsv.exceptions.CsvValidationException;
+import com.toedter.calendar.JDateChooser;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableRowSorter;
 import javax.swing.RowFilter;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.io.*;
-import com.opencsv.CSVReader;
-import com.opencsv.exceptions.CsvValidationException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.table.TableCellRenderer;
 
 public class EmployeeManagement extends JFrame {
-
     private JTextField txtSearch;
     private JTable tblPayroll;
     private DefaultTableModel tableModel;
     private User currentUser;
 
-    private JPanel mainPanel; // NEW: main panel to swap views
+    private JPanel mainPanel;
 
     public EmployeeManagement(User currentUser) {
         this.currentUser = currentUser;
         setTitle("MotorPH - Employee Management");
         setSize(1200, 700);
         setLocationRelativeTo(null);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); // Don't close HomePage!
-
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         initComponents();
     }
 
@@ -140,24 +150,32 @@ public class EmployeeManagement extends JFrame {
 
         // Mouse hover tooltip logic
         tblPayroll.addMouseMotionListener(new MouseMotionAdapter() {
-            @Override
-            public void mouseMoved(MouseEvent e) {
-                int row = tblPayroll.rowAtPoint(e.getPoint());
-                if (row > -1) {
-                    StringBuilder tooltip = new StringBuilder("<html>");
-                    int colCount = tblPayroll.getColumnCount();
-                    for (int col = 0; col < colCount; col++) {
-                        String colName = tblPayroll.getColumnName(col);
-                        String value = String.valueOf(tblPayroll.getValueAt(row, col));
-                        tooltip.append("<b>").append(colName).append(":</b> ").append(value).append("<br>");
-                    }
-                    tooltip.append("</html>");
-                    tblPayroll.setToolTipText(tooltip.toString());
-                } else {
-                    tblPayroll.setToolTipText(null);
+        @Override
+        public void mouseMoved(MouseEvent e) {
+            int row = tblPayroll.rowAtPoint(e.getPoint());
+            if (row > -1) {
+                StringBuilder tooltip = new StringBuilder("<html>");
+                int colCount = tblPayroll.getColumnCount();
+                for (int col = 0; col < colCount; col++) {
+                    Object valObj = tblPayroll.getValueAt(row, col);
+                    // skip null or blank
+                    if (valObj == null) continue;
+                    String value = valObj.toString().trim();
+                    if (value.isEmpty()) continue;
+
+                    String colName = tblPayroll.getColumnName(col);
+                    tooltip
+                      .append("<b>").append(colName).append(":</b> ")
+                      .append(value)
+                      .append("<br>");
                 }
+                tooltip.append("</html>");
+                tblPayroll.setToolTipText(tooltip.toString());
+            } else {
+                tblPayroll.setToolTipText(null);
             }
-        });
+        }
+    });
 
         JScrollPane scrollPane = new JScrollPane(tblPayroll);
 
@@ -249,37 +267,26 @@ public class EmployeeManagement extends JFrame {
         //Delete Button
         btnDelete.addActionListener(e -> {
             int selectedRow = tblPayroll.getSelectedRow();
-
             if (selectedRow == -1) {
                 JOptionPane.showMessageDialog(this, "Please select an employee to delete.", "No Selection", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-
             String selectedEmpID = tableModel.getValueAt(selectedRow, 0).toString();
-
             int confirm = JOptionPane.showConfirmDialog(
                 this,
                 "Are you sure you want to delete employee ID: " + selectedEmpID + "?",
                 "Confirm Deletion",
                 JOptionPane.YES_NO_OPTION
             );
-
             if (confirm == JOptionPane.YES_OPTION) {
-                // Delete from EmployeeData.csv
                 deleteEmployeeByID(selectedEmpID);
-
-                // Log to ChangeLogs
                 logDeletion(selectedEmpID);
-
-                // Reload table
                 try {
                     loadEmployeeData();
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(this, "Error reloading table after deletion: " + ex.getMessage());
                 }
             }
-
-            // Regardless → go back (dispose window if needed, or stay on this window)
         });
         
         // Update button → open editEmployee panel in a new JFrame (Update mode)
@@ -299,7 +306,7 @@ public class EmployeeManagement extends JFrame {
                 editEmployee updatePanel = new editEmployee(currentUser, selectedEmpID);
 
                 updateFrame.setContentPane(updatePanel);
-                updateFrame.setSize(800, 850);
+                updateFrame.pack();    
                 updateFrame.setLocationRelativeTo(this);
                 updateFrame.setVisible(true);
 
@@ -344,9 +351,10 @@ public class EmployeeManagement extends JFrame {
 
         }
 
-    private void loadEmployeeData() throws CsvValidationException {
-        tableModel.setRowCount(0); // Clear table
-        try (CSVReader reader = new CSVReader(new InputStreamReader(new FileInputStream("src/com/csv/EmployeeData.csv"), "UTF-8"))) {
+private void loadEmployeeData() throws CsvValidationException {
+        tableModel.setRowCount(0);
+        try (CSVReader reader = new CSVReader(new InputStreamReader(
+                new FileInputStream("src/com/csv/EmployeeData.csv"), "UTF-8"))) {
             String[] nextLine;
             boolean isHeader = true;
             while ((nextLine = reader.readNext()) != null) {
@@ -354,7 +362,7 @@ public class EmployeeManagement extends JFrame {
                     tableModel.setColumnIdentifiers(nextLine);
                     isHeader = false;
                 } else {
-                    nextLine[0] = nextLine[0].trim(); 
+                    nextLine[0] = nextLine[0].trim();
                     tableModel.addRow(nextLine);
                 }
             }
@@ -363,53 +371,86 @@ public class EmployeeManagement extends JFrame {
         }
     }
 
-    private void deleteEmployeeByID(String empID) {
-        File inputFile = new File("src/com/csv/EmployeeData.csv");
-        File tempFile = new File("src/com/csv/EmployeeData_temp.csv");
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(inputFile));
-             BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
-
-            String currentLine;
-            boolean header = true;
-            while ((currentLine = reader.readLine()) != null) {
-                String[] data = currentLine.split(",");
-                if (header) {
-                    writer.write(currentLine);
-                    writer.newLine();
-                    header = false;
-                    continue;
-                }
-
-                if (!data[0].trim().equals(empID)) {
-                    writer.write(currentLine);
-                    writer.newLine();
+    /**
+     * Deletes the given employee ID row from EmployeeData.csv, using OpenCSV.
+     */
+private void deleteEmployeeByID(String empID) {
+    // 1) remove from EmployeeData.csv
+    String empDataPath = "src/com/csv/EmployeeData.csv";
+    try {
+        List<String[]> rows;
+        try (CSVReader r = new CSVReader(new FileReader(empDataPath))) {
+            rows = r.readAll();
+        }
+        try (CSVWriter w = new CSVWriter(new FileWriter(empDataPath))) {
+            for (int i = 0; i < rows.size(); i++) {
+                String[] row = rows.get(i);
+                // keep header or any row whose ID != empID
+                if (i == 0 || !row[0].equals(empID)) {
+                    w.writeNext(row);
                 }
             }
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Error deleting employee: " + e.getMessage());
         }
-
-        // Replace original file
-        if (!inputFile.delete()) {
-            JOptionPane.showMessageDialog(this, "Error deleting original EmployeeData.csv!");
-            return;
-        }
-
-        if (!tempFile.renameTo(inputFile)) {
-            JOptionPane.showMessageDialog(this, "Error renaming temp EmployeeData.csv!");
-        }
+    } catch (IOException | CsvException ex) {
+        JOptionPane.showMessageDialog(this,
+            "Error deleting employee from EmployeeData.csv:\n" + ex.getMessage(),
+            "I/O Error", JOptionPane.ERROR_MESSAGE);
+        return;
     }
 
+    // 2) delete DTR file
+    File dtrFile = new File("src/com/csv/DTR", empID + ".csv");
+    if (dtrFile.exists() && !dtrFile.delete()) {
+        JOptionPane.showMessageDialog(this,
+            "Warning: could not delete DTR file for " + empID,
+            "File I/O Warning", JOptionPane.WARNING_MESSAGE);
+    }
+
+    // 3) remove from LoginCredentials.csv
+    String credPath = "src/com/csv/LoginCredentials.csv";
+    try {
+        List<String[]> creds;
+        try (CSVReader r = new CSVReader(new FileReader(credPath))) {
+            creds = r.readAll();
+        }
+        try (CSVWriter w = new CSVWriter(new FileWriter(credPath))) {
+            for (int i = 0; i < creds.size(); i++) {
+                String[] line = creds.get(i);
+                // keep header or lines whose username != empID
+                if (i == 0 || !line[0].equals(empID)) {
+                    w.writeNext(line);
+                }
+            }
+        }
+    } catch (IOException | CsvException ex) {
+        JOptionPane.showMessageDialog(this,
+            "Error removing from LoginCredentials.csv:\n" + ex.getMessage(),
+            "I/O Error", JOptionPane.ERROR_MESSAGE);
+        // note: we already deleted the main record, so proceed
+    }
+
+    JOptionPane.showMessageDialog(this,
+      "Employee " + empID + " deleted (and associated DTR + login creds removed).",
+      "Deletion Complete",
+      JOptionPane.INFORMATION_MESSAGE);
+}
+
+    /**
+     * Deletes an employee from:
+     *   - EmployeeData.csv
+     *   - LoginCredentials.csv
+     *   - DTR/<empID>.csv
+     */
     private void logDeletion(String empID) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter("src/com/csv/EmpDataChangeLogs.csv", true))) {
-            SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            String timestamp = timestampFormat.format(new Date());
-
+        try (BufferedWriter writer = new BufferedWriter(
+                new FileWriter("src/com/csv/EmpDataChangeLogs.csv", true))) {
+            String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
             String currentUserName = currentUser.getuFirstName() + " " + currentUser.getuLastName();
-
-            writer.write("DELETE," + currentUserName + "," + empID + "," + "ALL FIELDS" + "," + "Current Record" + "," + "Deleted" + "," +
-                    timestamp + "," + "Approved" + "," + "Employee record deleted");
+            writer.write(String.join(",",
+                "DELETE", currentUserName, empID,
+                "ALL FIELDS", "N/A", "Employee Deleted",
+                timestamp, "Approved", "Record removed"
+            ));
             writer.newLine();
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error logging deletion: " + e.getMessage());

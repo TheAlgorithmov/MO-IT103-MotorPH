@@ -5,8 +5,9 @@
 /**
  * PayrollManagement.java - Payroll Approval with Status Controls and Net Pay Display
  */
-package com.gui;
+package com.gui.Payroll;
 
+import com.gui.Home.User;
 import com.payroll.MotorPHPayrollG3;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;

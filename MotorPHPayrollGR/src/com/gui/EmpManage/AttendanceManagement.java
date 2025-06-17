@@ -1,5 +1,6 @@
-package com.gui;
+package com.gui.EmpManage;
 
+import com.gui.Home.User;
 import com.opencsv.CSVWriter;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;

@@ -6,7 +6,7 @@
  *
  * @author ongoj
  */
-package com.gui;
+package com.gui.Home;
 
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;

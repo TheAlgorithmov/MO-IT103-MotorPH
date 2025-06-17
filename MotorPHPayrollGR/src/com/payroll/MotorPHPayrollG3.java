@@ -1,5 +1,5 @@
 package com.payroll;
-import com.gui.LoginForm;
+import com.gui.Home.LoginForm;
 import java.util.*;
 import java.time.*;
 import javax.swing.JOptionPane;
