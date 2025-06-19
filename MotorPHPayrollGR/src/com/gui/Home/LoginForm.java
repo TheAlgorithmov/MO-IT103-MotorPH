@@ -257,7 +257,7 @@ public class LoginForm extends javax.swing.JFrame {
 
         jProgressBar1.setPreferredSize(new java.awt.Dimension(100, 5));
 
-        jButton1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/gui/Home/images/LoginIcons/login.png"))); // NOI18N
+        jButton1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/gui/images/LoginIcons/login.png"))); // NOI18N
         jButton1.setText("Log in");
         jButton1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -270,16 +270,16 @@ public class LoginForm extends javax.swing.JFrame {
         jPasswordField1.setCursor(new java.awt.Cursor(java.awt.Cursor.TEXT_CURSOR));
         jPasswordField1.setPreferredSize(new java.awt.Dimension(75, 25));
 
-        jLabel4.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/gui/Home/images/LoginIcons/password.png"))); // NOI18N
+        jLabel4.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/gui/images/LoginIcons/password.png"))); // NOI18N
 
-        jLabel3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/gui/Home/images/LoginIcons/username.png"))); // NOI18N
+        jLabel3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/gui/images/LoginIcons/username.png"))); // NOI18N
 
         jTextField1.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         jTextField1.setText("USERNAME");
         jTextField1.setPreferredSize(new java.awt.Dimension(75, 25));
 
         jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/gui/Home/images/LoginIcons/Logo2.png"))); // NOI18N
+        jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/gui/images/LoginIcons/Logo2.png"))); // NOI18N
         jLabel1.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
         jLabel1.setDoubleBuffered(true);
         jLabel1.setFocusCycleRoot(true);
