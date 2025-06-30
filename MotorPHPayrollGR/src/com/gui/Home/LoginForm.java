@@ -1,11 +1,9 @@
- /* lick nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
+/* lick nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
-
 /**
  *
  * @author JEO & Miles
  */
-
 package com.gui.Home;
 
 import java.awt.Color;
@@ -27,21 +25,23 @@ import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.Reader;
+
 /**
  * LoginForm - JFrame login UI with username/password, placeholders, spinner,
- * credential lookup, and HomePage launch with full User.
- * Make sure to update variable names if your .form file uses different ones!
+ * credential lookup, and HomePage launch with full User. Make sure to update
+ * variable names if your .form file uses different ones!
  */
-
 public class LoginForm extends javax.swing.JFrame {
-    
+
     //Login Handler Declarations 
     private final Map<String, Integer> failedAttempts = new HashMap<>();
     private final Map<String, javax.swing.Timer> lockoutTimers = new HashMap<>();
     private final Map<String, Boolean> lockoutFlags = new HashMap<>();
     private static final int MAX_ATTEMPTS = 3;
     private static final int LOCKOUT_DURATION_MS = 60_000; // 1 minute for testing; use 300_000 for 5 mins
-    private final Map<String, String> credentials = new HashMap<>();
+    private final Map<String, String[]> credentials = new HashMap<>();
+    // credentials.get("10001")[0] = password
+    // credentials.get("10001")[1] = lockoutStatus
 
     public LoginForm() {
         initComponents();
@@ -50,7 +50,7 @@ public class LoginForm extends javax.swing.JFrame {
         setSize(500, 600); // Or any size best fits form
         setResizable(false);
         setLocationRelativeTo(null); // This centers the window on the screen
-        
+
         // Placeholders for username
         jTextField1.setForeground(Color.GRAY);
         jTextField1.setText("USERNAME");
@@ -62,6 +62,7 @@ public class LoginForm extends javax.swing.JFrame {
                     jTextField1.setForeground(Color.BLACK);
                 }
             }
+
             @Override
             public void focusLost(FocusEvent e) {
                 if (jTextField1.getText().isEmpty()) {
@@ -94,7 +95,7 @@ public class LoginForm extends javax.swing.JFrame {
         });
         // Placeholders for password
         jPasswordField1.setForeground(Color.GRAY);
-        jPasswordField1.setEchoChar((char)0);
+        jPasswordField1.setEchoChar((char) 0);
         jPasswordField1.setText("PASSWORD");
         jPasswordField1.addFocusListener(new FocusAdapter() {
             @Override
@@ -106,12 +107,13 @@ public class LoginForm extends javax.swing.JFrame {
                     jPasswordField1.setEchoChar('•');
                 }
             }
+
             @Override
             public void focusLost(FocusEvent e) {
                 String pwd = new String(jPasswordField1.getPassword());
                 if (pwd.isEmpty()) {
                     jPasswordField1.setForeground(Color.GRAY);
-                    jPasswordField1.setEchoChar((char)0);
+                    jPasswordField1.setEchoChar((char) 0);
                     jPasswordField1.setText("PASSWORD");
                 }
             }
@@ -126,7 +128,7 @@ public class LoginForm extends javax.swing.JFrame {
 
         // Make Enter key activate Login
         getRootPane().setDefaultButton(jButton1);
-        
+
         // Enable/disable Log in button dynamically based on field values and lockout state
         jButton1.setEnabled(false);
 
@@ -134,28 +136,39 @@ public class LoginForm extends javax.swing.JFrame {
             void update() {
                 String user = jTextField1.getText().trim();
                 String pass = new String(jPasswordField1.getPassword());
-                boolean isLocked = lockoutFlags.getOrDefault(user, false);
-                boolean enable = !isLocked
-                    && !user.isEmpty() && !user.equals("USERNAME")
-                    && !pass.isEmpty() && !pass.equals("PASSWORD");
+                boolean enable = false;
+                if (credentials.containsKey(user)) {
+                    String[] cred = credentials.get(user);
+                    String lockStatus = cred[1];
+                    boolean isLocked = lockoutFlags.getOrDefault(user, false) || "Yes".equalsIgnoreCase(lockStatus);
+                    enable = !user.isEmpty() && !pass.isEmpty()
+                            && !user.equals("USERNAME") && !pass.equals("PASSWORD");
+                }
                 jButton1.setEnabled(enable);
             }
-            public void insertUpdate(javax.swing.event.DocumentEvent e) { update(); }
-            public void removeUpdate(javax.swing.event.DocumentEvent e) { update(); }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { update(); }
+
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                update();
+            }
+
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                update();
+            }
+
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                update();
+            }
         };
         jTextField1.getDocument().addDocumentListener(docListener);
         jPasswordField1.getDocument().addDocumentListener(docListener);
     }
-    
-    
+
     private void loadCredentials() {
         credentials.clear();
         try (
-            CSVReader reader = new CSVReader(
-                new InputStreamReader(getClass().getResourceAsStream("/com/csv/LoginCredentials.csv"), "UTF-8")
-            )
-        ) {
+                CSVReader reader = new CSVReader(
+                        new InputStreamReader(getClass().getResourceAsStream("/com/csv/LoginCredentials.csv"), "UTF-8")
+                )) {
             String[] nextLine;
             boolean isFirstLine = true;
 
@@ -165,65 +178,90 @@ public class LoginForm extends javax.swing.JFrame {
                     continue;
                 }
 
-                if (nextLine.length < 2) continue; // skip malformed rows
+                if (nextLine.length < 3) {
+                    continue; // ensure Lock Out column exists
+                }
+                String user = nextLine[0].trim();
+                String pass = nextLine[1].trim();
+                String lockoutStatus = nextLine[5].trim();
 
-                String user = nextLine[0].trim();    // Username column
-                String pass = nextLine[1].trim();    // Password column
+                if (user.equalsIgnoreCase("username")) {
+                    continue;
+                }
 
-                if (user.equalsIgnoreCase("username")) continue; // safety check on header row
-
-                credentials.put(user, pass);
+                credentials.put(user, new String[]{pass, lockoutStatus});
             }
+
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
-                "Error loading credentials:\n" + ex.getMessage(),
-                "Load Error", JOptionPane.ERROR_MESSAGE);
+                    "Error loading credentials:\n" + ex.getMessage(),
+                    "Load Error", JOptionPane.ERROR_MESSAGE);
         }
     }
-    
 
-    /** Reads employee info from /com/payroll/EmployeeData.csv and returns User */
+    private void updateLockoutStatusCSV(String userId, String status) {
+        try {
+            java.nio.file.Path path = java.nio.file.Paths.get(getClass().getResource("/com/csv/LoginCredentials.csv").toURI());
+            java.util.List<String> lines = java.nio.file.Files.readAllLines(path);
+            java.util.List<String> updated = new java.util.ArrayList<>();
+            for (String line : lines) {
+                if (line.startsWith(userId + ",")) {
+                    String[] parts = line.split(",", -1);
+                    if (parts.length >= 6) {
+                        parts[5] = status;
+                        updated.add(String.join(",", parts));
+                        continue;
+                    }
+                }
+                updated.add(line);
+            }
+            java.nio.file.Files.write(path, updated);
+        } catch (Exception ex) {
+            System.err.println("CSV lockout update failed: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Reads employee info from /com/payroll/EmployeeData.csv and returns User
+     */
     private User getUserFromEmployeeData(String username) {
         String path = "/com/csv/EmployeeData.csv";
         try (
-            InputStream is = getClass().getResourceAsStream(path);
-            Reader reader = new InputStreamReader(is);
-            CSVReader csvReader = new CSVReader(reader)
-        ) {
+                InputStream is = getClass().getResourceAsStream(path); Reader reader = new InputStreamReader(is); CSVReader csvReader = new CSVReader(reader)) {
             String[] parts;
             csvReader.readNext(); // skip header
 
             while ((parts = csvReader.readNext()) != null) {
                 if (parts.length >= 19 && parts[0].trim().equals(username)) {
                     return new User(
-                        parts[0].trim(), // EmpID
-                        parts[1].trim(), // First Name
-                        parts[2].trim(), // Last Name
-                        parts[3].trim(), // Birthday
-                        parts[4].trim(), // Hourly Rate
-                        parts[5].trim(), // Rice Subsidy
-                        parts[6].trim(), // Phone Allowance
-                        parts[7].trim(), // Clothing Allowance
-                        parts[8].trim(), // Status
-                        parts[9].trim(), // Position
-                        parts[10].trim(), // Basic Salary
-                        parts[11].trim(), // Phone Number
-                        parts[12].trim(), // SSS #
-                        parts[13].trim(), // PhilHealth #
-                        parts[14].trim(), // TIN #
-                        parts[15].trim(), // Pag-ibig #
-                        parts[16].trim(), // Immediate Supervisor
-                        parts[17].trim(), // Gross Semi-monthly Rate
-                        parts[18].trim()  // Address
+                            parts[0].trim(), // EmpID
+                            parts[1].trim(), // First Name
+                            parts[2].trim(), // Last Name
+                            parts[3].trim(), // Birthday
+                            parts[4].trim(), // Hourly Rate
+                            parts[5].trim(), // Rice Subsidy
+                            parts[6].trim(), // Phone Allowance
+                            parts[7].trim(), // Clothing Allowance
+                            parts[8].trim(), // Status
+                            parts[9].trim(), // Position
+                            parts[10].trim(), // Basic Salary
+                            parts[11].trim(), // Phone Number
+                            parts[12].trim(), // SSS #
+                            parts[13].trim(), // PhilHealth #
+                            parts[14].trim(), // TIN #
+                            parts[15].trim(), // Pag-ibig #
+                            parts[16].trim(), // Immediate Supervisor
+                            parts[17].trim(), // Gross Semi-monthly Rate
+                            parts[18].trim() // Address
                     );
+                }
             }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error reading user info:\n" + ex.getMessage(), "File Error", JOptionPane.ERROR_MESSAGE);
         }
-    } catch (Exception ex) {
-        JOptionPane.showMessageDialog(this, "Error reading user info:\n" + ex.getMessage(), "File Error", JOptionPane.ERROR_MESSAGE);
+        return null;
     }
-    return null;
-}
-    
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -257,7 +295,7 @@ public class LoginForm extends javax.swing.JFrame {
 
         jProgressBar1.setPreferredSize(new java.awt.Dimension(100, 5));
 
-        jButton1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/gui/Home/images/LoginIcons/login.png"))); // NOI18N
+        jButton1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/gui/images/LoginIcons/login.png"))); // NOI18N
         jButton1.setText("Log in");
         jButton1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -270,16 +308,16 @@ public class LoginForm extends javax.swing.JFrame {
         jPasswordField1.setCursor(new java.awt.Cursor(java.awt.Cursor.TEXT_CURSOR));
         jPasswordField1.setPreferredSize(new java.awt.Dimension(75, 25));
 
-        jLabel4.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/gui/Home/images/LoginIcons/password.png"))); // NOI18N
+        jLabel4.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/gui/images/LoginIcons/password.png")));
 
-        jLabel3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/gui/Home/images/LoginIcons/username.png"))); // NOI18N
+        jLabel3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/gui/images/LoginIcons/username.png")));
 
         jTextField1.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         jTextField1.setText("USERNAME");
         jTextField1.setPreferredSize(new java.awt.Dimension(75, 25));
 
         jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/gui/Home/images/LoginIcons/Logo2.png"))); // NOI18N
+        jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/gui/images/LoginIcons/Logo2.png"))); // NOI18N
         jLabel1.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
         jLabel1.setDoubleBuffered(true);
         jLabel1.setFocusCycleRoot(true);
@@ -338,7 +376,7 @@ public class LoginForm extends javax.swing.JFrame {
                 .addComponent(jButton1)
                 .addGap(18, 18, 18)
                 .addComponent(jProgressBar1, javax.swing.GroupLayout.PREFERRED_SIZE, 17, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(52, Short.MAX_VALUE))
+                .addContainerGap(49, Short.MAX_VALUE))
         );
 
         pack();
@@ -351,9 +389,9 @@ public class LoginForm extends javax.swing.JFrame {
 
         if (user.isEmpty() || !user.matches("\\d+")) {
             JOptionPane.showMessageDialog(this,
-                "Enter correct Employee User ID (numbers only).",
-                "Invalid Employee ID",
-                JOptionPane.ERROR_MESSAGE);
+                    "Enter correct Employee User ID (numbers only).",
+                    "Invalid Employee ID",
+                    JOptionPane.ERROR_MESSAGE);
             return;
         }
         // show spinner
@@ -362,9 +400,6 @@ public class LoginForm extends javax.swing.JFrame {
 
         String pass = new String(jPasswordField1.getPassword());
 
-        int attempts = failedAttempts.getOrDefault(user, 0);
-        boolean isLocked = lockoutFlags.getOrDefault(user, false);
-
         // Blank fields
         if (user.isEmpty() || user.equals("USERNAME")) {
             JOptionPane.showMessageDialog(this, "Please Enter Username & Password", "Missing Information", JOptionPane.WARNING_MESSAGE);
@@ -372,82 +407,108 @@ public class LoginForm extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "Please Enter Password", "Missing Information", JOptionPane.WARNING_MESSAGE);
         } else if (!credentials.containsKey(user)) {
             JOptionPane.showMessageDialog(this, "Please enter valid username. Username is your Employee ID Number.", "Invalid Username", JOptionPane.ERROR_MESSAGE);
-        } else if (isLocked) {
-            JOptionPane.showMessageDialog(this, "Account locked due to failed attempts. Please try again later.", "Locked Out", JOptionPane.ERROR_MESSAGE);
-        } else if (!credentials.get(user).equals(pass)) {
-            // Wrong password
-            attempts++;
-            failedAttempts.put(user, attempts);
-            int remaining = MAX_ATTEMPTS - attempts;
-            if (attempts >= MAX_ATTEMPTS) {
-                lockoutFlags.put(user, true);
-                jButton1.setEnabled(false);
-
-                javax.swing.Timer lockout = new javax.swing.Timer(LOCKOUT_DURATION_MS, e -> {
-                    failedAttempts.put(user, 0);
-                    lockoutTimers.remove(user);
-                    lockoutFlags.put(user, false);
-                    JOptionPane.showMessageDialog(LoginForm.this, "Login re-enabled. You may try again.", "Login Available", JOptionPane.INFORMATION_MESSAGE);
-                    // Re-enable if fields are valid and user is not locked
-                    String typedUser = jTextField1.getText().trim();
-                    String typedPass = new String(jPasswordField1.getPassword());
-                    boolean enable = !lockoutFlags.getOrDefault(typedUser, false)
-                            && !typedUser.isEmpty() && !typedUser.equals("USERNAME")
-                            && !typedPass.isEmpty() && !typedPass.equals("PASSWORD");
-                    jButton1.setEnabled(enable);
-                });
-                lockout.setRepeats(false);
-                lockout.start();
-                lockoutTimers.put(user, lockout);
-
-                JOptionPane.showMessageDialog(
-                    this,
-                    "Failed log in attempts maxed for this user!\nPlease contact admin or try again after " + (LOCKOUT_DURATION_MS/1000) + " seconds.",
-                    "Login Locked",
-                    JOptionPane.ERROR_MESSAGE
-                );
-            } else {
-                JOptionPane.showMessageDialog(
-                    this,
-                    "Incorrect password. Attempt " + attempts + " of " + MAX_ATTEMPTS + ".",
-                    "Incorrect Password",
-                    JOptionPane.ERROR_MESSAGE
-                );
-                jPasswordField1.setText("");
-            }
+            jProgressBar1.setIndeterminate(false);
+            jProgressBar1.setVisible(false);
+            return;
         } else {
-            // Success
-            failedAttempts.put(user, 0);
-            lockoutFlags.put(user, false);
-            if (lockoutTimers.containsKey(user)) {
-                lockoutTimers.get(user).stop();
-                lockoutTimers.remove(user);
-            }
-            User loggedUser = getUserFromEmployeeData(user);
-            if (loggedUser != null) {
+            String[] cred = credentials.get(user);
+            String storedPass = cred[0];
+            String lockStatus = cred[1];
+            int attempts = failedAttempts.getOrDefault(user, 0);
+            boolean isLocked = lockoutFlags.getOrDefault(user, false) || "Yes".equalsIgnoreCase(lockStatus);
+            if (isLocked) {
+                // stop spinner
+                jProgressBar1.setIndeterminate(false);
+                jProgressBar1.setVisible(false);
+
                 JOptionPane.showMessageDialog(
-                    this,
-                    "Login successful.\nWelcome, " + loggedUser.getuFirstName() + "!",
-                    "Welcome",
-                    JOptionPane.INFORMATION_MESSAGE
+                        this,
+                        "Your account has been locked by policy.\n"
+                        + "Please contact IT to reactivate your login.",
+                        "Account Locked",
+                        JOptionPane.ERROR_MESSAGE
                 );
-                new HomePage(loggedUser).setVisible(true);
-                dispose();
+                return;
+            } else if (!storedPass.equals(pass)) {
+                // Wrong password
+                attempts++;
+                failedAttempts.put(user, attempts);
+                int remaining = MAX_ATTEMPTS - attempts;
+                if (attempts >= MAX_ATTEMPTS) {
+                    lockoutFlags.put(user, true);
+                    updateLockoutStatusCSV(user, "Yes"); // Update the CSV file
+                    jButton1.setEnabled(false);
+
+                    javax.swing.Timer lockout = new javax.swing.Timer(LOCKOUT_DURATION_MS, e -> {
+                        failedAttempts.put(user, 0);
+                        lockoutTimers.remove(user);
+                        lockoutFlags.put(user, false);
+
+                        updateLockoutStatusCSV(user, "No"); // Reset in CSV
+
+                        JOptionPane.showMessageDialog(LoginForm.this, "Login re-enabled. You may try again.", "Login Available", JOptionPane.INFORMATION_MESSAGE);
+                        // Re-enable if fields are valid and user is not locked
+                        String typedUser = jTextField1.getText().trim();
+                        String typedPass = new String(jPasswordField1.getPassword());
+                        boolean enable = !lockoutFlags.getOrDefault(typedUser, false)
+                                && !typedUser.isEmpty() && !typedUser.equals("USERNAME")
+                                && !typedPass.isEmpty() && !typedPass.equals("PASSWORD");
+                        jButton1.setEnabled(enable);
+                    });
+                    lockout.setRepeats(false);
+                    lockout.start();
+                    lockoutTimers.put(user, lockout);
+
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "You have reached the maximum number of login attempts.\n"
+                            + "This account is now locked.\nPlease contact the IT team or try again after "
+                            + (LOCKOUT_DURATION_MS / 1000) + " seconds.",
+                            "Login Locked",
+                            JOptionPane.ERROR_MESSAGE
+                    );
+                } else {
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "Incorrect password. Attempt " + attempts + " of " + MAX_ATTEMPTS + ".",
+                            "Incorrect Password",
+                            JOptionPane.ERROR_MESSAGE
+                    );
+                    jPasswordField1.setText("");
+                }
             } else {
-                JOptionPane.showMessageDialog(
-                    this,
-                    "User data not found. Contact admin.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE
-                );
+                // Success
+                failedAttempts.put(user, 0);
+                lockoutFlags.put(user, false);
+                if (lockoutTimers.containsKey(user)) {
+                    lockoutTimers.get(user).stop();
+                    lockoutTimers.remove(user);
+                }
+                User loggedUser = getUserFromEmployeeData(user);
+                if (loggedUser != null) {
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "Login successful.\nWelcome, " + loggedUser.getuFirstName() + "!",
+                            "Welcome",
+                            JOptionPane.INFORMATION_MESSAGE
+                    );
+                    new HomePage(loggedUser).setVisible(true);
+                    dispose();
+                } else {
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "User data not found. Contact admin.",
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE
+                    );
+                }
             }
-        }
 
-        jProgressBar1.setIndeterminate(false);
-        jProgressBar1.setVisible(false);
+            jProgressBar1.setIndeterminate(false);
+            jProgressBar1.setVisible(false);
     }//GEN-LAST:event_jButton1ActionPerformed
+    }
 
-    
     /**
      * @param args the command line arguments
      */
