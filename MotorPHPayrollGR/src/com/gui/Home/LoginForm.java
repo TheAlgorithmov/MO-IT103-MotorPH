@@ -309,9 +309,7 @@ public class LoginForm extends javax.swing.JFrame {
         jPasswordField1.setPreferredSize(new java.awt.Dimension(75, 25));
 
         jLabel4.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/gui/images/LoginIcons/password.png")));
-
         jLabel3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/gui/images/LoginIcons/username.png")));
-
         jTextField1.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         jTextField1.setText("USERNAME");
         jTextField1.setPreferredSize(new java.awt.Dimension(75, 25));
