@@ -1,6 +1,5 @@
- /* Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
+/* Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
-
 package com.gui.Home;
 
 import com.gui.EmpManage.AttendanceManagement;
@@ -40,6 +39,7 @@ import com.gui.EmpManage.editEmployee;
 import com.opencsv.exceptions.CsvValidationException;
 import com.systemMaintenance.SystemMaintenance;
 import javax.swing.JFrame;
+import com.gui.Payroll.PaySlip;
 
 /**
  *
@@ -51,7 +51,7 @@ public class HomePage extends javax.swing.JFrame {
     private User currentUser; // Store the user info
     private String clockInDate = null;
     private String clockInTime = null;
-    
+
     //jPanel2
     private javax.swing.JLabel jLabelGovHeader;
     private javax.swing.JLabel jLabelSSS;
@@ -73,22 +73,43 @@ public class HomePage extends javax.swing.JFrame {
     public HomePage(User user) {
         this.currentUser = user;
         initComponents();
-        
+        // ── role-based button controls ───────────────────────────────
+        String role = currentUser.getuPosition();
+        // Employee Management → IT, HR Manager, HR Team Leader, **HR Rank and File**
+        boolean canManageEmployees
+                = role.equals("IT Operations and Systems")
+                || role.equals("HR Manager")
+                || role.equals("HR Team Leader")
+                || role.equals("HR Rank and File");
+        jButton3.setVisible(canManageEmployees);
+
+        // Payroll Management → CFO, Payroll Manager, Payroll Team Leader, **Payroll Rank and File**
+        boolean canManagePayroll
+                = role.equals("Chief Finance Officer")
+                || role.equals("Payroll Manager")
+                || role.equals("Payroll Team Leader")
+                || role.equals("Payroll Rank and File");
+        jButton2.setVisible(canManagePayroll);
+
+        boolean canSystemMaintenance
+                = role.equals("IT Operations and Systems");
+        jButton9.setVisible(canSystemMaintenance);
+
         //jPanel2 method
         setupJPanel2(); // we will define this method
-            
+
         setResizable(false);// Removes maximize and resizing
         setLocationRelativeTo(null); // This centers the window on the screen
         pack();// Fit frame to preferred size
-        
+
         // Set the company logo on the left
         SwingUtilities.invokeLater(() -> setLogoOnLabel(jLabel1, "/com/gui/images/LoginIcons/RevisedLogo.png"));
         SwingUtilities.invokeLater(() -> setProfileImage(jLabel5, currentUser.getuEmpId()));
         setUserInfo();
         startClock();
-        
+
     }
-    
+
     // Default constructor for GUI builder compatibility (not used in production)
     public HomePage() {
         initComponents();
@@ -111,7 +132,7 @@ public class HomePage extends javax.swing.JFrame {
             jLabel12.setText("<html><b>Immediate Supervisor:</b><br>" + currentUser.getuImmediateSupervisor() + "</html>");
             jLabel14.setText("<html><b>Address:</b> " + currentUser.getuAddress() + "</html>");
 
-             //jPanel2 Values
+            //jPanel2 Values
             jLabelSSS.setText("SSS Number: " + currentUser.getuSSS());
             jLabelPhilhealth.setText("Philhealth Number: " + currentUser.getuPhilHealth());
             jLabelTIN.setText("TIN Number: " + currentUser.getuTIN());
@@ -125,7 +146,6 @@ public class HomePage extends javax.swing.JFrame {
             jLabelPhoneAllowance.setText("Phone Allowance: " + currentUser.getuPhoneAllowance());
             jLabelClothingAllowance.setText("Clothing Allowance: " + currentUser.getuClothingAllowance());
 
-            
             // Optionally set profile image:
             // jLabel1.setIcon(new ImageIcon(getClass().getResource("/com/gui/profile.png")));
             // jLabel5.setIcon(...) for main photo
@@ -134,15 +154,17 @@ public class HomePage extends javax.swing.JFrame {
 
     // Start a timer to update date and time labels
     private String getCurrentManilaDate() {
-    SimpleDateFormat dateFormat = new SimpleDateFormat("M/d/yyyy");
-    dateFormat.setTimeZone(TimeZone.getTimeZone("Asia/Manila"));
-    return dateFormat.format(new Date());
-}
+        SimpleDateFormat dateFormat = new SimpleDateFormat("M/d/yyyy");
+        dateFormat.setTimeZone(TimeZone.getTimeZone("Asia/Manila"));
+        return dateFormat.format(new Date());
+    }
+
     private String getCurrentManilaTime() {
         SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a");
         timeFormat.setTimeZone(TimeZone.getTimeZone("Asia/Manila"));
         return timeFormat.format(new Date());
-}
+    }
+
     private void startClock() {
         Timer timer = new Timer(1000, new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
@@ -157,8 +179,8 @@ public class HomePage extends javax.swing.JFrame {
         });
         timer.start();
     }
-    
-        private void setProfileImage(JLabel label, String empId) {
+
+    private void setProfileImage(JLabel label, String empId) {
         String[] exts = {".png", ".jpg", ".jpeg"};
         boolean found = false;
         for (String ext : exts) {
@@ -170,9 +192,9 @@ public class HomePage extends javax.swing.JFrame {
                 int height = label.getHeight();
                 float aspectRatio = (float) icon.getIconWidth() / icon.getIconHeight();
                 if (width / (float) height > aspectRatio) {
-                    width = (int) (height * aspectRatio); 
-                } 
-                else { height = (int) (width / aspectRatio);
+                    width = (int) (height * aspectRatio);
+                } else {
+                    height = (int) (width / aspectRatio);
                 }
                 Image img = icon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
                 label.setIcon(new ImageIcon(img));
@@ -198,9 +220,10 @@ public class HomePage extends javax.swing.JFrame {
         }
         label.setHorizontalAlignment(SwingConstants.CENTER);
         label.setVerticalAlignment(SwingConstants.CENTER);
-}
-        // Helper method for setLogoOnLabel
-        private void setLogoOnLabel(JLabel label, String resourcePath) {
+    }
+    // Helper method for setLogoOnLabel
+
+    private void setLogoOnLabel(JLabel label, String resourcePath) {
         java.net.URL logoURL = getClass().getResource(resourcePath);
         if (logoURL != null) {
             ImageIcon icon = new ImageIcon(logoURL);
@@ -217,8 +240,8 @@ public class HomePage extends javax.swing.JFrame {
         }
         label.setHorizontalAlignment(SwingConstants.CENTER);
         label.setVerticalAlignment(SwingConstants.CENTER);
-        }
-        
+    }
+
     private void setupJPanel2() {
         jPanel2.setBorder(javax.swing.BorderFactory.createTitledBorder("Additional Details"));
         jPanel2.setLayout(new java.awt.GridLayout(0, 1));
@@ -283,6 +306,7 @@ public class HomePage extends javax.swing.JFrame {
         jButton5 = new javax.swing.JButton();
         jButton7 = new javax.swing.JButton();
         jButton9 = new javax.swing.JButton();
+        jButton10 = new javax.swing.JButton();
         jButton6 = new javax.swing.JButton();
         jPanel2 = new javax.swing.JPanel();
         jPanel3 = new javax.swing.JPanel();
@@ -379,6 +403,13 @@ public class HomePage extends javax.swing.JFrame {
             }
         });
 
+        jButton10.setText("View Payroll Details");
+        jButton10.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton10ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -394,22 +425,26 @@ public class HomePage extends javax.swing.JFrame {
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addGap(4, 4, 4)
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
+                                        .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 238, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                        .addComponent(jButton10, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                        .addComponent(jButton2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                        .addComponent(jButton3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                        .addComponent(jButton7, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                        .addComponent(jButton9, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                                     .addGroup(jPanel1Layout.createSequentialGroup()
                                         .addComponent(jButton4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                         .addGap(18, 18, 18)
-                                        .addComponent(jButton5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                        .addComponent(jButton9, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                        .addComponent(jButton1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                        .addComponent(jButton2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                        .addComponent(jLabel2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 233, Short.MAX_VALUE)
-                                        .addComponent(jButton3, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                        .addComponent(jButton7, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))))
+                                        .addComponent(jButton5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(38, 38, 38)
                         .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 201, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(17, Short.MAX_VALUE))
         );
+
+        jPanel1Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {jButton1, jButton10, jButton2, jButton3, jButton7, jButton9, jLabel2});
+
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
@@ -425,17 +460,21 @@ public class HomePage extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jButton1)
+                .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jButton10, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jButton2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jButton3)
+                .addComponent(jButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jButton7)
+                .addComponent(jButton7, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jButton9)
-                .addContainerGap(32, Short.MAX_VALUE))
+                .addComponent(jButton9, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(67, Short.MAX_VALUE))
         );
+
+        jPanel1Layout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {jButton1, jButton10, jButton2, jButton3, jButton7, jButton9, jLabel2});
 
         jButton6.setText("Log out");
         jButton6.setMaximumSize(new java.awt.Dimension(75, 25));
@@ -517,15 +556,15 @@ public class HomePage extends javax.swing.JFrame {
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel3Layout.createSequentialGroup()
                         .addGap(3, 3, 3)
-                        .addComponent(jLabel6, javax.swing.GroupLayout.DEFAULT_SIZE, 22, Short.MAX_VALUE)
+                        .addComponent(jLabel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGap(6, 6, 6)
-                        .addComponent(jLabel7, javax.swing.GroupLayout.DEFAULT_SIZE, 22, Short.MAX_VALUE)
+                        .addComponent(jLabel7, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGap(6, 6, 6)
-                        .addComponent(jLabel8, javax.swing.GroupLayout.DEFAULT_SIZE, 22, Short.MAX_VALUE)
+                        .addComponent(jLabel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jLabel9, javax.swing.GroupLayout.DEFAULT_SIZE, 22, Short.MAX_VALUE)
+                        .addComponent(jLabel9, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jLabel10, javax.swing.GroupLayout.DEFAULT_SIZE, 22, Short.MAX_VALUE)
+                        .addComponent(jLabel10, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jLabel12, javax.swing.GroupLayout.DEFAULT_SIZE, 23, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -577,11 +616,11 @@ public class HomePage extends javax.swing.JFrame {
     private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
         // Logout Button - returns to LoginForm
         int confirm = JOptionPane.showConfirmDialog(
-            this,
-            "Are you sure you want to log out?",
-            "Logout Confirmation",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.QUESTION_MESSAGE
+                this,
+                "Are you sure you want to log out?",
+                "Logout Confirmation",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
         );
         if (confirm == JOptionPane.YES_OPTION) {
             // Close ALL open windows first
@@ -637,11 +676,11 @@ public class HomePage extends javax.swing.JFrame {
             // Warn if under 8 hours
             if (durationMinutes < 480) {
                 int confirm = JOptionPane.showConfirmDialog(
-                    this,
-                    "You have worked less than 8 hours (" + hours + "h " + minutes + "m).\nAre you sure you want to clock out?",
-                    "Confirm Early Clock Out",
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.WARNING_MESSAGE
+                        this,
+                        "You have worked less than 8 hours (" + hours + "h " + minutes + "m).\nAre you sure you want to clock out?",
+                        "Confirm Early Clock Out",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE
                 );
                 if (confirm != JOptionPane.YES_OPTION) {
                     return;
@@ -652,9 +691,7 @@ public class HomePage extends javax.swing.JFrame {
             File file = new File(userCsvFile);
             boolean isNewFile = !file.exists();
 
-            try (FileWriter fw = new FileWriter(file, true);
-                 BufferedWriter bw = new BufferedWriter(fw);
-                 PrintWriter out = new PrintWriter(bw)) {
+            try (FileWriter fw = new FileWriter(file, true); BufferedWriter bw = new BufferedWriter(fw); PrintWriter out = new PrintWriter(bw)) {
 
                 if (isNewFile) {
                     out.println("EmpID,Log Date,Clock In,Clock Out,Duration");
@@ -662,11 +699,11 @@ public class HomePage extends javax.swing.JFrame {
 
                 String durationStr = hours + "h " + minutes + "m";
 
-                out.println(empId + "," +
-                            clockInDate + "," +
-                            clockInTime + "," +
-                            clockOutTime + "," +
-                            durationStr);
+                out.println(empId + ","
+                        + clockInDate + ","
+                        + clockInTime + ","
+                        + clockOutTime + ","
+                        + durationStr);
             }
 
             // Reset session values
@@ -683,17 +720,17 @@ public class HomePage extends javax.swing.JFrame {
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         // TODO add your handling code here:
         if (currentUser.isLeadership()) {
-          // leadership → full EmployeeManagement
-          new EmployeeManagement(currentUser).setVisible(true);
+            // leadership → full EmployeeManagement
+            new EmployeeManagement(currentUser).setVisible(true);
         } else {
-          // regular user → only their own editEmployee form
-          editEmployee panel = new editEmployee(currentUser, currentUser.getuEmpId());
-          JFrame frame = new JFrame("Update Profile — ID " + currentUser.getuEmpId());
-          frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-          frame.setContentPane(panel);
-          frame.pack();
-          frame.setLocationRelativeTo(this);
-          frame.setVisible(true);
+            // regular user → only their own editEmployee form
+            editEmployee panel = new editEmployee(currentUser, currentUser.getuEmpId());
+            JFrame frame = new JFrame("Update Profile — ID " + currentUser.getuEmpId());
+            frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            frame.setContentPane(panel);
+            frame.pack();
+            frame.setLocationRelativeTo(this);
+            frame.setVisible(true);
         }
     }//GEN-LAST:event_jButton1ActionPerformed
 
@@ -703,14 +740,14 @@ public class HomePage extends javax.swing.JFrame {
                 new PayrollManagement(currentUser).setVisible(true);
             } catch (CsvValidationException ex) {
                 Logger.getLogger(HomePage.class.getName())
-                      .log(Level.SEVERE, null, ex);
+                        .log(Level.SEVERE, null, ex);
             }
         } else {
             JOptionPane.showMessageDialog(
-                this,
-                "Access restricted to Finance/Payroll roles only.",
-                "Permission Denied",
-                JOptionPane.WARNING_MESSAGE
+                    this,
+                    "Access restricted to Finance/Payroll roles only.",
+                    "Permission Denied",
+                    JOptionPane.WARNING_MESSAGE
             );
         }
     }//GEN-LAST:event_jButton2ActionPerformed
@@ -721,41 +758,49 @@ public class HomePage extends javax.swing.JFrame {
             new EmployeeManagement(currentUser).setVisible(true);
         } else {
             JOptionPane.showMessageDialog(
-                this,
-                "Access restricted to leadership, IT or HR roles only.",
-                "Permission Denied",
-                JOptionPane.WARNING_MESSAGE
+                    this,
+                    "Access restricted to leadership, IT or HR roles only.",
+                    "Permission Denied",
+                    JOptionPane.WARNING_MESSAGE
             );
         }
     }//GEN-LAST:event_jButton3ActionPerformed
 
     private void jButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton7ActionPerformed
-    new AttendanceManagement(currentUser).setVisible(true);
+        // Open the Attendance Management window for the logged-in user
+        AttendanceManagement am = new AttendanceManagement(currentUser);
+        am.pack();
+        am.setLocationRelativeTo(this);
+        am.setVisible(true);
 
     }//GEN-LAST:event_jButton7ActionPerformed
 
     private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton8ActionPerformed
         // TODO add your handling code here:
         JFileChooser chooser = new JFileChooser();
-        chooser.setFileFilter(new FileNameExtensionFilter("PNG / JPG Images","png","jpg","jpeg"));
-        if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
+        chooser.setFileFilter(new FileNameExtensionFilter("PNG / JPG Images", "png", "jpg", "jpeg"));
+        if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
 
         File src = chooser.getSelectedFile();
         String empId = currentUser.getuEmpId();
-        String ext   = src.getName().substring(src.getName().lastIndexOf('.')+1).toLowerCase();
+        String ext = src.getName().substring(src.getName().lastIndexOf('.') + 1).toLowerCase();
         String expected = empId + "." + ext;
         if (!src.getName().equals(expected)) {
             JOptionPane.showMessageDialog(
-                this,
-                "Filename must be exactly “" + expected + "”",
-                "Invalid Filename",
-                JOptionPane.ERROR_MESSAGE
+                    this,
+                    "Filename must be exactly “" + expected + "”",
+                    "Invalid Filename",
+                    JOptionPane.ERROR_MESSAGE
             );
             return;
         }
 
         File destDir = new File("src/com/gui/images/EmployeeIDs");
-        if (!destDir.exists()) destDir.mkdirs();
+        if (!destDir.exists()) {
+            destDir.mkdirs();
+        }
         File dest = new File(destDir, expected);
 
         try {
@@ -764,22 +809,27 @@ public class HomePage extends javax.swing.JFrame {
             // no label‐preview code here
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(
-                this,
-                "Error saving file: " + ex.getMessage(),
-                "I/O Error",
-                JOptionPane.ERROR_MESSAGE
+                    this,
+                    "Error saving file: " + ex.getMessage(),
+                    "I/O Error",
+                    JOptionPane.ERROR_MESSAGE
             );
         }
     }//GEN-LAST:event_jButton8ActionPerformed
 
     private void jButton9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton9ActionPerformed
         // TODO add your handling code here:
-            if ("IT Operations and Systems".equals(currentUser.getuPosition())) {
-        new SystemMaintenance().setVisible(true);
-    } else {
-        JOptionPane.showMessageDialog(null, "Access restricted to IT roles only.");
-    }
+        if ("IT Operations and Systems".equals(currentUser.getuPosition())) {
+            new SystemMaintenance().setVisible(true);
+        } else {
+            JOptionPane.showMessageDialog(null, "Access restricted to IT roles only.");
+        }
     }//GEN-LAST:event_jButton9ActionPerformed
+
+    private void jButton10ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton10ActionPerformed
+        // TODO add your handling code here:
+
+    }//GEN-LAST:event_jButton10ActionPerformed
 
     /**
      * @param args the command line arguments
@@ -817,6 +867,7 @@ public class HomePage extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jButton10;
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
     private javax.swing.JButton jButton4;
@@ -848,11 +899,15 @@ public class HomePage extends javax.swing.JFrame {
     public static class LoginForm extends JFrame {
 
         // ────── CUSTOM FIELDS ─────────────────────────────────────────────────────
-        /** CSV‐backed username/password store */
+        /**
+         * CSV‐backed username/password store
+         */
         private Map<String, String> credentials = new HashMap<>();
         // ────────────────────────────────────────────────────────────────────────────
 
-        /** Creates new form LoginUI */
+        /**
+         * Creates new form LoginUI
+         */
         public LoginForm() {
             initComponents();
             // generated code – sets up jTextField1, jPasswordField1, etc.
@@ -919,9 +974,9 @@ public class HomePage extends javax.swing.JFrame {
         }
 
         /**
-         * This method is called from within the constructor to initialize the form.
-         * WARNING: Do NOT modify this code. The content of this method is always
-         * regenerated by the Form Editor.
+         * This method is called from within the constructor to initialize the
+         * form. WARNING: Do NOT modify this code. The content of this method is
+         * always regenerated by the Form Editor.
          */
         @SuppressWarnings(value = "unchecked")
         private void initComponents() {
@@ -982,7 +1037,9 @@ public class HomePage extends javax.swing.JFrame {
             pack();
         } // </editor-fold>
 
-        /** Login button handler */
+        /**
+         * Login button handler
+         */
         private void jButton1ActionPerformed(ActionEvent evt) {
             // TODO add your handling code here:
             // show spinner
@@ -1006,7 +1063,9 @@ public class HomePage extends javax.swing.JFrame {
         }
 
         // ────── CUSTOM METHOD ──────────────────────────────────────────────────────
-        /** Reads username/password pairs from a CSV at the project root */
+        /**
+         * Reads username/password pairs from a CSV at the project root
+         */
         private void loadCredentialsFromCSV(String path) {
             credentials.clear();
             try (BufferedReader br = new BufferedReader(new FileReader(path))) {
