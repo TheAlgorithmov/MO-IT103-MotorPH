@@ -20,12 +20,16 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.*;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.event.TableModelEvent;
 
 public class AttendanceManagement extends JFrame {
 
     private static final String SUPERVISOR_LIST_CSV = "src/com/csv/SupervisorLists.csv";
     private static final String DTR_STATUS_CSV = "src/com/csv/DTR/DTRPayrollStatus.csv";
     private static final String DTR_CHANGE_LOGS = "src/com/csv/DTR/DTRChangeLogs.csv";
+    private static final String DTR_FOLDER = "src/com/csv/DTR/";
 
     private final User currentUser;
     private JTable table;
@@ -70,8 +74,8 @@ public class AttendanceManagement extends JFrame {
         JPanel filter = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
         fromDatePicker = new JDateChooser();
         toDatePicker = new JDateChooser();
-        fromDatePicker.setPreferredSize(new Dimension(125, 25));
-        toDatePicker.setPreferredSize(new Dimension(125, 25));
+        fromDatePicker.setPreferredSize(new Dimension(125, 30));
+        toDatePicker.setPreferredSize(new Dimension(125, 30));
         filter.add(new JLabel("From:"));
         filter.add(fromDatePicker);
         filter.add(new JLabel("To:"));
@@ -124,11 +128,53 @@ public class AttendanceManagement extends JFrame {
         table = new JTable(tableModel);
         add(new JScrollPane(table), BorderLayout.CENTER);
 
-        // ─── SAVE PANEL ──────────────────────────────────────────────────────────
+// ─── PERSIST INLINE EDITS ───────────────────────────────────────────────
+        tableModel.addTableModelListener(e -> {
+            if (e.getType() != TableModelEvent.UPDATE) {
+                return;
+            }
+            int row = e.getFirstRow(), col = e.getColumn();
+            if (col < 0 || col > 2) {
+                return; // only date/in/out
+            }
+            String empId = isSupervisor()
+                    ? (String) employeeSelector.getSelectedItem()
+                    : currentUser.getuEmpId();
+            String date = tableModel.getValueAt(row, 0).toString();
+            String newValue = tableModel.getValueAt(row, col).toString();
+            int csvCol = (col == 0 ? 1 : (col == 1 ? 2 : 3)); // CSV: 0=EmpID,1=Date,2=LogIn,3=LogOut
+            try {
+                updateCsvCell(empId, date, csvCol, newValue);
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Failed to save change:\n" + ex.getMessage(),
+                        "I/O Error", JOptionPane.ERROR_MESSAGE
+                );
+            }
+        });
+
+        // ─── MANUAL ENTRY & SAVE BUTTON ────────────────────────────────────────
         if (isSupervisor()) {
             JPanel south = new JPanel(new FlowLayout(FlowLayout.RIGHT));
             JButton save = new JButton("Save Changes");
-            save.addActionListener(e -> saveChanges());
+            save.addActionListener(e -> {
+                // just trigger model-write for all rows
+                for (int r = 0; r < tableModel.getRowCount(); r++) {
+                    for (int c = 0; c <= 2; c++) {
+                        String emp = (String) employeeSelector.getSelectedItem();
+                        String date = tableModel.getValueAt(r, 0).toString();
+                        String val = tableModel.getValueAt(r, c).toString();
+                        try {
+                            updateCsvCell(emp, date, 1 + c, val);
+                        } catch (IOException ignored) {
+                        }
+                    }
+                }
+                JOptionPane.showMessageDialog(this,
+                        "All edits saved.", "Saved", JOptionPane.INFORMATION_MESSAGE);
+            });
+
             south.add(save);
             add(south, BorderLayout.SOUTH);
         }
@@ -146,8 +192,8 @@ public class AttendanceManagement extends JFrame {
                     approveLeave();
                 }
             }));
+
             side.add(new JButton(new AbstractAction("Manual Time Entry") {
-                @Override
                 public void actionPerformed(ActionEvent e) {
                     String sel = (String) employeeSelector.getSelectedItem();
                     if (currentUser.getuEmpId().equals(sel)) {
@@ -159,6 +205,7 @@ public class AttendanceManagement extends JFrame {
                     openManualDTRDialog();
                 }
             }));
+
             side.add(new JButton(new AbstractAction("Validate Timesheet") {
                 @Override
                 public void actionPerformed(ActionEvent e) {
@@ -244,9 +291,9 @@ public class AttendanceManagement extends JFrame {
             r.readNext();
             String[] row;
             while ((row = r.readNext()) != null) {
-                if (row[0].trim().equals(empId)) {
-                    fn = row[1].trim();
-                    ln = row[2].trim();
+                if (row[0].equals(empId)) {
+                    fn = row[1];
+                    ln = row[2];
                     break;
                 }
             }
@@ -261,24 +308,21 @@ public class AttendanceManagement extends JFrame {
             tableModel.setRowCount(0);
             return;
         }
+
         Map<String, String[]> map = new HashMap<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(f))) {
-            String line;
-            boolean hdr = true;
-            while ((line = br.readLine()) != null) {
-                if (hdr) {
-                    hdr = false;
-                    continue;
-                }
-                String[] p = line.split(",", -1);
-                if (p.length >= 5) {
-                    map.put(p[1].trim(), p);
+
+        try (CSVReader reader = new CSVReader(new FileReader(f))) {
+            reader.readNext();                // skip header
+            String[] row;
+            while ((row = reader.readNext()) != null) {
+                if (row.length >= 5) {
+                    map.put(row[1].trim(), row);   // row[1] now has **no quotes**
                 }
             }
-        } catch (IOException ex) {
+        } catch (IOException | CsvValidationException ex) {
             JOptionPane.showMessageDialog(this,
-                    "I/O Error reading " + f.getName() + ":\n" + ex.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
+                    "Error reading " + f.getName() + ":\n" + ex.getMessage(),
+                    "I/O Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -331,135 +375,340 @@ public class AttendanceManagement extends JFrame {
         }
     }
 
+    /**
+     * Pops up *payroll-status* (not DTR logs) for the selected employee,
+     * showing only the approval columns.
+     */
     private void viewDTRStatus() {
-        File f = new File(DTR_STATUS_CSV);
-        if (!f.exists()) {
-            JOptionPane.showMessageDialog(this, "No DTRPayrollStatus.csv found.", "Info", JOptionPane.INFORMATION_MESSAGE);
+        // 1) Make sure they’ve picked a date range
+        if (fromDatePicker.getDate() == null || toDatePicker.getDate() == null) {
+            JOptionPane.showMessageDialog(this,
+                    "Please select a date range first.",
+                    "Date Required", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        DefaultTableModel m;
-        try (CSVReader r = new CSVReader(new FileReader(f))) {
-            List<String[]> all = r.readAll();
-            if (all.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "No records.", "Info", JOptionPane.INFORMATION_MESSAGE);
-                return;
-            }
-            m = new DefaultTableModel(all.get(0), 0);
-            for (int i = 1; i < all.size(); i++) {
-                m.addRow(all.get(i));
+
+        // 2) Figure out which employee
+        String emp = isSupervisor()
+                ? (String) employeeSelector.getSelectedItem()
+                : currentUser.getuEmpId();
+
+        // 3) Open their DTR CSV
+        File f = new File(DTR_FOLDER + emp + ".csv");
+        if (!f.exists()) {
+            JOptionPane.showMessageDialog(this,
+                    "No DTR file found for " + emp + ".\nUse Manual Entry first.",
+                    "No Records", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        // 4) Build a model for the 9 columns you care about
+        String[] cols = {
+            "Employee #", "First Name", "Last Name",
+            "DTR Approved By", "DTR Approved Date", "DTR Status",
+            "Payroll Approved By", "Payroll Approved Date", "Payroll Status"
+        };
+        DefaultTableModel model = new DefaultTableModel(cols, 0);
+
+        // 5) Parse & filter by date range
+        LocalDate start = fromDatePicker.getDate().toInstant()
+                .atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate end = toDatePicker.getDate().toInstant()
+                .atZone(ZoneId.systemDefault()).toLocalDate();
+        DateTimeFormatter df = DateTimeFormatter.ofPattern("M/d/yyyy");
+
+        try (CSVReader reader = new CSVReader(new FileReader(f))) {
+            String[] row = reader.readNext();  // skip header
+            while ((row = reader.readNext()) != null) {
+                // row[1] = Date
+                LocalDate d = LocalDate.parse(row[1], df);
+                if (d.isBefore(start) || d.isAfter(end)) {
+                    continue;
+                }
+
+                // row indices:
+                //   0=Employee#, 1=Date, 2=Log In, 3=Log Out,
+                //   4=First Name, 5=Last Name,
+                //   6=DTR Approved By, 7=DTR Approved Date, 8=DTR Status,
+                //   9=Payroll Approved By, 10=Payroll Approved Date, 11=Payroll Status
+                model.addRow(new Object[]{
+                    row[0], row[4], row[5],
+                    row[6], row[7], row[8],
+                    row[9], row[10], row[11]
+                });
             }
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Error reading status:\n" + ex.getMessage(),
+            JOptionPane.showMessageDialog(this,
+                    "Error reading DTR for " + emp + ":\n" + ex.getMessage(),
                     "I/O Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        JTable tbl = new JTable(m);
+
+        // 6) If nothing to show
+        if (model.getRowCount() == 0) {
+            JOptionPane.showMessageDialog(this,
+                    "No approval records found for “" + emp + "”.",
+                    "No Records", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        // 7) Display in a dialog
+        JTable tbl = new JTable(model);
         JScrollPane sp = new JScrollPane(tbl);
-        sp.setPreferredSize(new Dimension(800, 400));
-        JDialog dlg = new JDialog(this, "DTR Approval Status", true);
-        dlg.setLayout(new BorderLayout());
-        dlg.add(sp, BorderLayout.CENTER);
-        JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton del = new JButton("Delete Selected Row");
-        del.addActionListener(e -> {
-            int r = tbl.getSelectedRow();
-            if (r < 0) {
-                JOptionPane.showMessageDialog(dlg, "Select a row.", "No Selection", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            if (JOptionPane.showConfirmDialog(dlg, "Delete selected record?", "Confirm Delete",
-                    JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) {
-                return;
-            }
-            m.removeRow(r);
-            try (CSVWriter w = new CSVWriter(new FileWriter(f))) {
-                int cc = m.getColumnCount();
-                String[] hdr = new String[cc];
-                for (int i = 0; i < cc; i++) {
-                    hdr[i] = m.getColumnName(i);
-                }
-                w.writeNext(hdr);
-                for (int rr = 0; rr < m.getRowCount(); rr++) {
-                    String[] row = new String[cc];
-                    for (int c = 0; c < cc; c++) {
-                        Object o = m.getValueAt(rr, c);
-                        row[c] = o == null ? "" : o.toString();
-                    }
-                    w.writeNext(row);
-                }
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(this, "Error writing status:\n" + ex.getMessage(),
-                        "I/O Error", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-        btns.add(del);
-        JButton ok = new JButton("OK");
-        ok.addActionListener(e -> dlg.dispose());
-        btns.add(ok);
-        dlg.add(btns, BorderLayout.SOUTH);
-        dlg.pack();
-        dlg.setLocationRelativeTo(this);
-        dlg.setVisible(true);
+        sp.setPreferredSize(new Dimension(800, 300));
+        JOptionPane.showMessageDialog(this, sp,
+                "Approval Status for " + emp, JOptionPane.INFORMATION_MESSAGE);
     }
 
+    /**
+     * Updates a single cell in DTR/{empId}.csv, which now has columns:
+     * 0=Employee #, 1=Date, 2=Log In, 3=Log Out, 4=First Name, 5=Last Name,
+     * 6=DTR Approved By, 7=DTR Approved Date, 8=DTR Status, 9=Payroll Approved
+     * By, 10=Payroll Approved Date, 11=Payroll Status
+     */
+    private void updateCsvCell(String empId, String date, int csvCol, String newValue) throws IOException {
+        File f = new File(DTR_FOLDER + empId + ".csv");
+        List<String[]> all = new ArrayList<>();
+
+        // 1) Read entire file (if it exists)
+        if (f.exists()) {
+            try (CSVReader r = new CSVReader(new FileReader(f))) {
+                String[] row;
+                while ((row = r.readNext()) != null) {
+                    all.add(row);
+                }
+            } catch (CsvValidationException ex) {
+                Logger.getLogger(AttendanceManagement.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+
+        // 2) If empty, inject the new 11-column header
+        String[] header = {
+            "Employee #", "Date", "Log In", "Log Out",
+            "First Name", "Last Name",
+            "DTR Approved By", "DTR Approved Date", "DTR Status",
+            "Payroll Approved By", "Payroll Approved Date", "Payroll Status"
+        };
+        if (all.isEmpty()) {
+            all.add(header);
+        }
+
+        // 3) Look up this employee's name once
+        String fn = "", ln = "";
+        try (CSVReader rex = new CSVReader(new FileReader("src/com/csv/EmployeeData.csv"))) {
+            rex.readNext(); // skip
+            String[] rrow;
+            while ((rrow = rex.readNext()) != null) {
+                if (rrow[0].trim().equals(empId)) {
+                    fn = rrow[1].trim();
+                    ln = rrow[2].trim();
+                    break;
+                }
+            }
+        } catch (Exception ign) {
+        }
+
+        // 4) Find & update the matching date row
+        boolean found = false;
+        for (int i = 1; i < all.size(); i++) {
+            String[] row = all.get(i);
+            // ensure row has at least 11 entries
+            if (row.length < header.length) {
+                row = Arrays.copyOf(row, header.length);
+            }
+            if (row[1].equals(date)) {
+                // fill in name columns if blank
+                if (row[4] == null || row[4].isEmpty()) {
+                    row[4] = fn;
+                }
+                if (row[5] == null || row[5].isEmpty()) {
+                    row[5] = ln;
+                }
+                // now update the one cell the user edited
+                row[csvCol] = newValue;
+                all.set(i, row);
+                found = true;
+                break;
+            }
+        }
+
+        // 5) If not found, append a new line with Date + edited cell + names
+        if (!found) {
+            String[] newRow = new String[header.length];
+            newRow[0] = empId;
+            newRow[1] = date;
+            newRow[csvCol] = newValue;
+            newRow[4] = fn;
+            newRow[5] = ln;
+            // leave the rest (approval & payroll columns) blank or “Pending”
+            newRow[6] = "";         // DTR Approved By
+            newRow[7] = "";         // DTR Approved Date
+            newRow[8] = "Pending";   // DTR Status
+            newRow[9] = "";        // Payroll Approved By 
+            newRow[10] = "";       // Payroll Approved Date  
+            newRow[11] = "Pending";  // Payroll Status
+            all.add(newRow);
+        }
+
+        // 6) Write everything back out
+        try (CSVWriter w = new CSVWriter(new FileWriter(f))) {
+            for (String[] row : all) {
+                w.writeNext(row);
+            }
+        }
+    }
+
+    /**
+     * Updates exactly one cell in a per-employee DTR CSV. That file has exactly
+     * 5 columns: 0=EmpID, 1=Date, 2=Log In, 3=Log Out, 4=Duration
+     */
+    private void updateDtrFileCell(String empId, String date, int csvCol, String newValue)
+            throws IOException {
+        File f = new File("src/com/csv/DTR/" + empId + ".csv");
+        List<String[]> all = new ArrayList<>();
+
+        // 1) Read existing file (if any)
+        if (f.exists()) {
+            try (CSVReader r = new CSVReader(new FileReader(f))) {
+                String[] row;
+                while ((row = r.readNext()) != null) {
+                    all.add(row);
+                }
+            } catch (CsvValidationException ex) {
+                Logger.getLogger(AttendanceManagement.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+
+        // 2) If completely empty, inject a 5‐column header
+        if (all.isEmpty()) {
+            all.add(new String[]{"EmpID", "Date", "Log In", "Log Out", "Duration"});
+        }
+
+        // 3) Find the row matching our date, update that column
+        boolean found = false;
+        for (int i = 1; i < all.size(); i++) {
+            String[] row = all.get(i);
+            if (row.length > 1 && row[1].equals(date)) {
+                if (row.length < 5) {
+                    row = Arrays.copyOf(row, 5);
+                }
+                row[csvCol] = newValue;
+                all.set(i, row);
+                found = true;
+                break;
+            }
+        }
+
+        // 4) If not found, append a new row (leaving other cells blank)
+        if (!found) {
+            String[] nr = new String[5];
+            nr[0] = empId;
+            nr[1] = date;
+            if (csvCol == 2) {
+                nr[2] = newValue;  // Log In
+            } else if (csvCol == 3) {
+                nr[3] = newValue;  // Log Out
+            }        // duration (4) left blank for later recompute
+            all.add(nr);
+        }
+
+        // 5) Overwrite the CSV with our updated rows
+        try (CSVWriter w = new CSVWriter(new FileWriter(f))) {
+            for (String[] row : all) {
+                w.writeNext(row);
+            }
+        }
+    }
+
+    /**
+     * Supervisor action: mark existing DTR rows Approved, writing into the
+     * employee’s own DTR.csv at columns: 6 = DTR Approved By 7 = DTR Approved
+     * Date 8 = DTR Status
+     */
     private void validateTimesheet() {
         if (!isSupervisor()) {
             return;
         }
+
         String emp = (String) employeeSelector.getSelectedItem();
-        Date d1 = fromDatePicker.getDate(), d2 = toDatePicker.getDate();
-        if (emp == null || d1 == null || d2 == null) {
-            JOptionPane.showMessageDialog(this, "Select employee & date range.",
-                    "Validation", JOptionPane.WARNING_MESSAGE);
+        Date rawFrom = fromDatePicker.getDate(), rawTo = toDatePicker.getDate();
+        if (rawFrom == null || rawTo == null) {
+            JOptionPane.showMessageDialog(this,
+                    "Please select both From and To dates before validating.",
+                    "Date Required", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        if (JOptionPane.showConfirmDialog(this, "Review entries and proceed?",
-                "Confirm", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) {
+
+        LocalDate start = rawFrom.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate end = rawTo.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        if (end.isBefore(start)) {
+            JOptionPane.showMessageDialog(this,
+                    "“To” date must be on or after the “From” date.",
+                    "Invalid Range", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        LocalDate from = d1.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        String period = computePayPeriod(from);
-        File stf = new File(DTR_STATUS_CSV);
-        if (stf.exists()) {
-            try (CSVReader r = new CSVReader(new FileReader(stf))) {
-                r.readNext();
-                String[] row;
-                while ((row = r.readNext()) != null) {
-                    if (row[0].equals(emp) && row[3].equals(period)) {
-                        JOptionPane.showMessageDialog(this, "Already validated: " + period,
-                                "Duplicate", JOptionPane.WARNING_MESSAGE);
-                        return;
-                    }
-                }
-            } catch (Exception ignored) {
-            }
-        }
-        String fn = "", ln = "";
-        try (CSVReader r = new CSVReader(new FileReader("src/com/csv/EmployeeData.csv"))) {
-            r.readNext();
+
+        // Load all existing dates from the employee's CSV
+        File dtrFile = new File(DTR_FOLDER + emp + ".csv");
+        Set<String> existing = new HashSet<>();
+        DateTimeFormatter df = DateTimeFormatter.ofPattern("M/d/yyyy");
+        try (CSVReader r = new CSVReader(new FileReader(dtrFile))) {
+            r.readNext(); // skip header
             String[] row;
             while ((row = r.readNext()) != null) {
-                if (row[0].equals(emp)) {
-                    fn = row[1];
-                    ln = row[2];
-                    break;
+                if (row.length > 1) {
+                    existing.add(row[1].trim());
                 }
             }
-        } catch (Exception ignored) {
-        }
-        boolean newFile = !stf.exists() || stf.length() == 0;
-        try (PrintWriter pw = new PrintWriter(new FileWriter(stf, true))) {
-            if (newFile) {
-                pw.println("EmpID,First Name,Last Name,Pay Period,DTR Status,DTR Approved Date");
-            }
-            String date = new SimpleDateFormat("M/d/yyyy").format(new Date());
-            pw.printf("%s,%s,%s,%s,Approved,%s%n", emp, fn, ln, period, date);
-            JOptionPane.showMessageDialog(this, "Recorded for " + period,
-                    "Success", JOptionPane.INFORMATION_MESSAGE);
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this, "Error writing status:\n" + ex.getMessage(),
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Cannot read DTR for " + emp + ":\n" + ex.getMessage(),
                     "I/O Error", JOptionPane.ERROR_MESSAGE);
+            return;
         }
+
+        // Build list of dates both in range AND existing in the file
+        List<String> toApprove = new ArrayList<>();
+        for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
+            String ds = d.format(df);
+            if (existing.contains(ds)) {
+                toApprove.add(ds);
+            }
+        }
+        if (toApprove.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "No existing DTR entries found in that date range.\n"
+                    + "Use Manual Entry to add missing days first.",
+                    "Nothing to Validate", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        // Confirm once
+        if (JOptionPane.showConfirmDialog(this,
+                "Approve " + toApprove.size() + " DTR day(s) for " + emp + "?",
+                "Confirm Validation", JOptionPane.YES_NO_OPTION)
+                != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        // Stamp each approved row
+        String approverId = currentUser.getuEmpId();
+        String approverDate = new SimpleDateFormat("M/d/yyyy").format(new Date());
+        for (String ds : toApprove) {
+            try {
+                updateCsvCell(emp, ds, 6, approverId);      // DTR Approved By
+                updateCsvCell(emp, ds, 7, approverDate);    // DTR Approved Date
+                updateCsvCell(emp, ds, 8, "Approved");      // DTR Status
+            } catch (IOException ioe) {
+                JOptionPane.showMessageDialog(this,
+                        "Failed to stamp " + ds + ":\n" + ioe.getMessage(),
+                        "I/O Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+
+        JOptionPane.showMessageDialog(this,
+                "Successfully approved DTR for " + toApprove.size() + " day(s).",
+                "Done", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private String computePayPeriod(LocalDate from) {
@@ -563,26 +812,36 @@ public class AttendanceManagement extends JFrame {
             String timeOut = new SimpleDateFormat("h:mm a").format((Date) spinnerOut.getValue());
             String empID = (String) employeeSelector.getSelectedItem();
             logDTRChange(empID, "Manual DTR entry: " + timeIn + "–" + timeOut + " on " + date);
-            writeAttendanceCsv(empID);
 
+            // (1) Log to the change-log as you already do:
+            logDTRChange(empID, "Manual DTR entry: " + timeIn + "–" + timeOut + " on " + date);
+
+            // (2) **Update just those two cells** in the employee's DTR.csv:
+            try {
+                // CSV columns are now: 0=Employee#,1=Date,2=Log In,3=Log Out,…11=PayrollStatus
+                updateCsvCell(empID, date, 2, timeIn);
+                updateCsvCell(empID, date, 3, timeOut);
+            } catch (IOException io) {
+                JOptionPane.showMessageDialog(this,
+                        "Error saving manual entry:\n" + io.getMessage(),
+                        "I/O Error", JOptionPane.ERROR_MESSAGE);
+            }
+
+            // (3) Now update *just that row* in the tableModel so the UI matches:
             boolean found = false;
-
             for (int i = 0; i < tableModel.getRowCount(); i++) {
-                String rowDate = tableModel.getValueAt(i, 0).toString().trim();
-                if (rowDate.equals(date)) {
+                if (tableModel.getValueAt(i, 0).equals(date)) {
                     tableModel.setValueAt(timeIn, i, 1);
                     tableModel.setValueAt(timeOut, i, 2);
-                    tableModel.setValueAt("Manual", i, 3);
                     found = true;
                     break;
                 }
             }
-
             if (!found) {
-                tableModel.addRow(new Object[]{date, timeIn, timeOut, "Manual", "", "", "Pending"});
+                // if it was an entirely new date, append it:
+                tableModel.addRow(new Object[]{date, timeIn, timeOut, "-", "-", "-", "Present"});
             }
 
-            writeTableToCSV();
             dialog.dispose();
         });
 

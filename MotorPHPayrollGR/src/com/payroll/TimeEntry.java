@@ -3,11 +3,20 @@ package com.payroll;
 import java.io.*;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.*;
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
+import java.time.LocalDate;
 
 public class TimeEntry {
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("M/d/yyyy h:mm a");
 
+// make it tolerant of lower-/upper-case “am/pm”
+    private static final DateTimeFormatter DATE_TIME_FORMATTER
+            = new DateTimeFormatterBuilder()
+                    .parseCaseInsensitive() // ← key line
+                    .appendPattern("M/d/yyyy h:mm a") // keep the “ a” token!
+                    .toFormatter(Locale.ENGLISH);
     private final String empId;
     private final LocalDateTime clockIn;
     private final LocalDateTime clockOut;
@@ -35,11 +44,21 @@ public class TimeEntry {
     }
 
     private float calculateHolidayMultiplier() {
-        if (isRestDay && isRegularHoliday) return 2.6f;
-        if (isRegularHoliday) return 2.00f;
-        if (isSpecialNonWorking) return 1.30f;
-        if (isRestDay) return 1.50f;
-        if (isSpecialWorking) return 1.00f;
+        if (isRestDay && isRegularHoliday) {
+            return 2.6f;
+        }
+        if (isRegularHoliday) {
+            return 2.00f;
+        }
+        if (isSpecialNonWorking) {
+            return 1.30f;
+        }
+        if (isRestDay) {
+            return 1.50f;
+        }
+        if (isSpecialWorking) {
+            return 1.00f;
+        }
         return 1.00f;
     }
 
@@ -51,45 +70,79 @@ public class TimeEntry {
         return (isRegularHoliday || isSpecialNonWorking) && isRestDay;
     }
 
-    public String getEmpId() { return empId; }
-    public LocalDateTime getClockIn() { return clockIn; }
-    public LocalDateTime getClockOut() { return clockOut; }
-    public boolean isRegularHoliday() { return isRegularHoliday; }
-    public boolean isSpecialNonWorking() { return isSpecialNonWorking; }
-    public boolean isSpecialWorking() { return isSpecialWorking; }
-    public boolean isRestDay() { return isRestDay; }
-    public float getHolidayMultiplier() { return holidayMultiplier; }
-    public float getHoursWorked() { return hoursWorked; }
+    public String getEmpId() {
+        return empId;
+    }
+
+    public LocalDateTime getClockIn() {
+        return clockIn;
+    }
+
+    public LocalDateTime getClockOut() {
+        return clockOut;
+    }
+
+    public boolean isRegularHoliday() {
+        return isRegularHoliday;
+    }
+
+    public boolean isSpecialNonWorking() {
+        return isSpecialNonWorking;
+    }
+
+    public boolean isSpecialWorking() {
+        return isSpecialWorking;
+    }
+
+    public boolean isRestDay() {
+        return isRestDay;
+    }
+
+    public float getHolidayMultiplier() {
+        return holidayMultiplier;
+    }
+
+    public float getHoursWorked() {
+        return hoursWorked;
+    }
 
     public static List<TimeEntry> loadTimeEntries(String filename) {
         List<TimeEntry> timeEntries = new ArrayList<>();
         File file = new File(filename);
 
         if (!file.exists()) {
-            System.err.println("Error: Time entries file not found.");
+            System.err.println("Error: Time entries file not found -> " + file.getAbsolutePath());
             return timeEntries;
         }
 
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-            br.readLine();
-            String line;
-            while ((line = br.readLine()) != null) {
+        try (CSVReader reader = new CSVReader(new FileReader(file))) {
+            reader.readNext();                      // skip header row
+
+            String[] row;
+            while ((row = reader.readNext()) != null) {
+                if (row.length < 5) {
+                    continue;       // malformed → skip
+                }
                 try {
-                    String[] data = line.split(",");
-                    if (data.length < 5) continue;
+                    String empId = row[0].trim();
+                    String dateStr = row[1].trim();      // e.g. 7/24/2024
+                    String inStr = row[2].trim();      // e.g. 10:06 am
+                    String outStr = row[3].trim();      // e.g. 7:15 pm
+                    boolean overtime = Boolean.parseBoolean(row[4].trim());
 
-                    String empId = data[0].trim();
-                    LocalDateTime clockIn = LocalDateTime.parse(data[1].trim() + " " + data[2].trim(), DATE_TIME_FORMATTER);
-                    LocalDateTime clockOut = LocalDateTime.parse(data[1].trim() + " " + data[3].trim(), DATE_TIME_FORMATTER);
-                    boolean hasOvertime = Boolean.parseBoolean(data[4].trim());
+                    LocalDateTime clockIn = LocalDateTime.parse(
+                            dateStr + " " + inStr, DATE_TIME_FORMATTER);
+                    LocalDateTime clockOut = LocalDateTime.parse(
+                            dateStr + " " + outStr, DATE_TIME_FORMATTER);
 
-                    timeEntries.add(new TimeEntry(empId, clockIn, clockOut, hasOvertime));
-                } catch (Exception e) {
-                    System.err.println("Skipping invalid entry: " + e.getMessage());
+                    timeEntries.add(new TimeEntry(empId, clockIn, clockOut, overtime));
+                } catch (Exception ex) {
+                    System.err.println("Skipping invalid entry "
+                            + Arrays.toString(row) + " → " + ex.getMessage());
                 }
             }
-        } catch (IOException e) {
-            System.err.println("Error reading time entries: " + e.getMessage());
+        } catch (IOException | CsvValidationException ex) {
+            System.err.println("Error reading time entries: " + ex.getMessage());
         }
 
         return timeEntries;
@@ -99,11 +152,18 @@ public class TimeEntry {
         List<TimeEntry> filteredEntries = new ArrayList<>();
         for (TimeEntry entry : timeEntries) {
             LocalDate entryDate = entry.getClockIn().toLocalDate();
-            if ((entryDate.isEqual(startDate) || entryDate.isAfter(startDate)) &&
-                (entryDate.isEqual(endDate) || entryDate.isBefore(endDate))) {
+            if ((entryDate.isEqual(startDate) || entryDate.isAfter(startDate))
+                    && (entryDate.isEqual(endDate) || entryDate.isBefore(endDate))) {
                 filteredEntries.add(entry);
             }
         }
         return filteredEntries;
+    }
+
+    /**
+     * Returns the work-date (yyyy-MM-dd) for this time-entry.
+     */
+    public LocalDate getLogDate() {
+        return clockIn.toLocalDate();
     }
 }
