@@ -18,11 +18,12 @@ import java.io.FileOutputStream;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-
+import javax.swing.BorderFactory;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.pdf.PdfWriter;
 
 public class PaySlip extends JPanel {
+
     private Object[] payrollReport;
     private LocalDate startDate, endDate, payDate;
     private JButton exportBtn;
@@ -82,7 +83,7 @@ public class PaySlip extends JPanel {
         String[] nameParts = empName.trim().split("\\s+");
         String formattedName = empName;
         if (nameParts.length >= 2) {
-            formattedName = nameParts[nameParts.length-1] + ", " + nameParts[0];
+            formattedName = nameParts[nameParts.length - 1] + ", " + nameParts[0];
         }
         contentPanel.add(makeInfoRow("Employee Name:", formattedName));
         contentPanel.add(makeInfoRow("Position:", String.valueOf(payrollReport[3])));
@@ -158,7 +159,10 @@ public class PaySlip extends JPanel {
         scrollPane.getVerticalScrollBar().setUnitIncrement(18);
 
         add(scrollPane, BorderLayout.CENTER);
-
+        int PAD = 24;                                      // 24-px uniform margin
+        setBorder(BorderFactory.createEmptyBorder(PAD, PAD, PAD, PAD));
+        int MAX_W = 500;                                   // cap to 500 px so it never balloons
+        setMaximumSize(new Dimension(MAX_W, Integer.MAX_VALUE));
         // Export button
         exportBtn = new JButton("Export to PDF");
         exportBtn.setFont(new Font("Arial", Font.PLAIN, 16));
@@ -281,5 +285,3 @@ public class PaySlip extends JPanel {
         exportBtn.setVisible(true); // Show again for normal use
     }
 }
-
-

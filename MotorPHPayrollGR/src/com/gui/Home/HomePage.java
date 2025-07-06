@@ -6,7 +6,6 @@ import com.gui.EmpManage.AttendanceManagement;
 import com.gui.EmpManage.EmployeeManagement;
 import com.gui.Payroll.PayrollManagement;
 import java.awt.event.*;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import javax.swing.*;
 import java.awt.Color;
@@ -24,8 +23,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
-import java.time.LocalDate;
-import java.time.DayOfWeek;
 import java.awt.*;
 import java.util.Date;
 import java.text.SimpleDateFormat;
@@ -36,10 +33,9 @@ import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.ImageIcon;
 import com.gui.EmpManage.editEmployee;
-import com.opencsv.exceptions.CsvValidationException;
 import com.systemMaintenance.SystemMaintenance;
 import javax.swing.JFrame;
-import com.gui.Payroll.PaySlip;
+import com.gui.Payroll.PayrollDisplay;
 
 /**
  *
@@ -68,6 +64,8 @@ public class HomePage extends javax.swing.JFrame {
     private javax.swing.JLabel jLabelRiceSubsidy;
     private javax.swing.JLabel jLabelPhoneAllowance;
     private javax.swing.JLabel jLabelClothingAllowance;
+
+    private PayrollDisplay payrollDisplay;
 
     // Constructor: receive User info
     public HomePage(User user) {
@@ -736,12 +734,7 @@ public class HomePage extends javax.swing.JFrame {
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
         if (currentUser.canAccessPayrollManagement()) {
-            try {
-                new PayrollManagement(currentUser).setVisible(true);
-            } catch (CsvValidationException ex) {
-                Logger.getLogger(HomePage.class.getName())
-                        .log(Level.SEVERE, null, ex);
-            }
+            new PayrollManagement(currentUser).setVisible(true);
         } else {
             JOptionPane.showMessageDialog(
                     this,
@@ -828,7 +821,12 @@ public class HomePage extends javax.swing.JFrame {
 
     private void jButton10ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton10ActionPerformed
         // TODO add your handling code here:
-
+        if (payrollDisplay == null) {                       // first time
+            payrollDisplay = new PayrollDisplay(currentUser, this);
+        }
+        payrollDisplay.setLocationRelativeTo(this);         // center on parent
+        payrollDisplay.setVisible(true);                    // show (or bring to front)
+        payrollDisplay.toFront();
     }//GEN-LAST:event_jButton10ActionPerformed
 
     /**

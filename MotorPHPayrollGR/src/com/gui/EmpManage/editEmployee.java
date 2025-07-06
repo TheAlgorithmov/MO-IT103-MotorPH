@@ -24,11 +24,10 @@ import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -496,15 +495,44 @@ public class editEmployee extends JPanel {
         if (!dtrFile.exists()) {
             try (CSVWriter w = new CSVWriter(new FileWriter(dtrFile))) {
                 w.writeNext(new String[]{
-                    "Employee #", "Date", "Log In", "Log Out", "First Name", "Last Name"
+                    "Employee #",
+                    "Date",
+                    "Log In",
+                    "Log Out",
+                    "First Name",
+                    "Last Name",
+                    "DTR Approved By",
+                    "DTR Approved Date",
+                    "DTR Status",
+                    "Payroll Approved By",
+                    "Payroll Approved Date",
+                    "Payroll Status"
                 });
             } catch (IOException e) {
                 JOptionPane.showMessageDialog(this,
                         "Error creating DTR file:\n" + e.getMessage(),
                         "I/O Error",
-                        JOptionPane.ERROR_MESSAGE);
-                // NOTE: still continue—DTR can be re-created later
+                        JOptionPane.ERROR_MESSAGE
+                );
+                // still continue—DTR can be re-created later
             }
+        }
+
+        // ── Append to SupervisorLists.csv ─────────────────────────────────────
+        try (CSVWriter w = new CSVWriter(
+                new FileWriter("src/com/csv/SupervisorLists.csv", true))) {
+            // Columns: EmpID,FirstName,LastName,Department,SupervisorName
+            w.writeNext(new String[]{
+                id,
+                firstname,
+                lastname,
+                position, // or department if you have one
+                supervisor // the selected supervisor name
+            });
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Error updating SupervisorLists.csv:\n" + ex.getMessage(),
+                    "I/O Error", JOptionPane.ERROR_MESSAGE);
         }
 
         // 7) Success!
@@ -630,6 +658,41 @@ public class editEmployee extends JPanel {
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
                     "Error updating LoginCredentials.csv:\n" + ex.getMessage(),
+                    "I/O Error", JOptionPane.ERROR_MESSAGE);
+        }
+
+        // ── Update SupervisorLists.csv ────────────────────────────────────────
+        try {
+            List<String[]> rows = new ArrayList<>();
+            try (CSVReader r = new CSVReader(
+                    new FileReader("src/com/csv/SupervisorLists.csv"))) {
+                rows = r.readAll();
+            }
+
+            try (CSVWriter w = new CSVWriter(
+                    new FileWriter("src/com/csv/SupervisorLists.csv"))) {
+                for (int i = 0; i < rows.size(); i++) {
+                    String[] row = rows.get(i);
+                    if (i == 0) {
+                        // header
+                        w.writeNext(row);
+                    } else if (row[0].equals(editingEmpID)) {
+                        // replace with updated data
+                        w.writeNext(new String[]{
+                            editingEmpID,
+                            firstname,
+                            lastname,
+                            status, // or position/department
+                            supervisor
+                        });
+                    } else {
+                        w.writeNext(row);
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Error updating SupervisorLists.csv:\n" + ex.getMessage(),
                     "I/O Error", JOptionPane.ERROR_MESSAGE);
         }
 

@@ -9,8 +9,6 @@ package com.gui.Home;
 import java.awt.Color;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.JOptionPane;
@@ -20,9 +18,7 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
 import javax.swing.text.DocumentFilter.FilterBypass;
 import com.opencsv.CSVReader;
-import com.opencsv.exceptions.CsvValidationException;
 import java.io.InputStreamReader;
-import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.Reader;
 
