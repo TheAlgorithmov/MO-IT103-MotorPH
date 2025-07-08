@@ -51,6 +51,13 @@ public class editEmployee extends JPanel {
     // Buttons
     private JButton btnAdd, btnUpdate, btnClear, btnBack;
 
+    /**
+     * "Juan", "Dela Cruz" -> "Dela Cruz, Juan"
+     */
+    private static String formatName(String first, String last) {
+        return last.trim() + ", " + first.trim();
+    }
+
     public editEmployee(User user) {
         this(user, null);
     }
@@ -78,7 +85,7 @@ public class editEmployee extends JPanel {
                             || role.equals("Accounting Head")
                             || role.equals("HR Manager")
                             || role.equals("HR Team Leader")) {
-                        supervisors.add(row[1].trim() + " " + row[2].trim());
+                        supervisors.add(formatName(row[1], row[2]));
                     }
                 }
             }
@@ -340,7 +347,7 @@ public class editEmployee extends JPanel {
                     continue;
                 }
                 String role = d[9].trim();
-                String name = d[1].trim() + " " + d[2].trim();
+                String name = formatName(d[1], d[2]);
                 if (role.matches("HR Manager|HR Team Leader|Chief Executive Officer|Chief Operating Officer|Chief Finance Officer|Chief Marketing Officer|IT Operations and Systems|Accounting Head")) {
                     leaders.add(name);
                 }

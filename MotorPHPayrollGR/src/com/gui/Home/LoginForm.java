@@ -18,9 +18,19 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
 import javax.swing.text.DocumentFilter.FilterBypass;
 import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
+import com.opencsv.exceptions.CsvException;
+import com.opencsv.exceptions.CsvValidationException;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.InputStream;
 import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * LoginForm - JFrame login UI with username/password, placeholders, spinner,
@@ -35,9 +45,33 @@ public class LoginForm extends javax.swing.JFrame {
     private final Map<String, Boolean> lockoutFlags = new HashMap<>();
     private static final int MAX_ATTEMPTS = 3;
     private static final int LOCKOUT_DURATION_MS = 60_000; // 1 minute for testing; use 300_000 for 5 mins
-    private final Map<String, String[]> credentials = new HashMap<>();
+    private static final String LOGIN_CSV = "/com/csv/loginCredentials.csv";
+    private static final Path CRED_PATH = Paths.get("src", "com", "csv", "LoginCredentials.csv");
+
     // credentials.get("10001")[0] = password
     // credentials.get("10001")[1] = lockoutStatus
+    private Map<String, String[]> loadLoginCredentials() {
+        Map<String, String[]> map = new HashMap<>();
+        try (CSVReader r = new CSVReader(Files.newBufferedReader(CRED_PATH))) {
+            String[] row;
+            boolean header = true;
+            while ((row = r.readNext()) != null) {
+                if (header) {
+                    header = false;
+                    continue;
+                }
+                map.put(row[0].trim(), row);  // ID → whole row
+            }
+        } catch (IOException | CsvValidationException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Unable to read " + CRED_PATH.toAbsolutePath()
+                    + "\n" + ex.getMessage(),
+                    "File Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+        return map;
+    }
 
     public LoginForm() {
         initComponents();
@@ -115,9 +149,6 @@ public class LoginForm extends javax.swing.JFrame {
             }
         });
 
-        // Load credentials from /com/gui/LoginCredentials.csv
-        loadCredentials();
-
         // hide spinner
         jProgressBar1.setIndeterminate(false);
         jProgressBar1.setVisible(false);
@@ -132,14 +163,10 @@ public class LoginForm extends javax.swing.JFrame {
             void update() {
                 String user = jTextField1.getText().trim();
                 String pass = new String(jPasswordField1.getPassword());
-                boolean enable = false;
-                if (credentials.containsKey(user)) {
-                    String[] cred = credentials.get(user);
-                    String lockStatus = cred[1];
-                    boolean isLocked = lockoutFlags.getOrDefault(user, false) || "Yes".equalsIgnoreCase(lockStatus);
-                    enable = !user.isEmpty() && !pass.isEmpty()
-                            && !user.equals("USERNAME") && !pass.equals("PASSWORD");
-                }
+
+                boolean enable = !user.isEmpty() && !pass.isEmpty()
+                        && !user.equals("USERNAME") && !pass.equals("PASSWORD");
+
                 jButton1.setEnabled(enable);
             }
 
@@ -155,65 +182,38 @@ public class LoginForm extends javax.swing.JFrame {
                 update();
             }
         };
+
         jTextField1.getDocument().addDocumentListener(docListener);
         jPasswordField1.getDocument().addDocumentListener(docListener);
     }
 
-    private void loadCredentials() {
-        credentials.clear();
-        try (
-                CSVReader reader = new CSVReader(
-                        new InputStreamReader(getClass().getResourceAsStream("/com/csv/LoginCredentials.csv"), "UTF-8")
-                )) {
-            String[] nextLine;
-            boolean isFirstLine = true;
-
-            while ((nextLine = reader.readNext()) != null) {
-                if (isFirstLine) {
-                    isFirstLine = false; // Skip header
-                    continue;
-                }
-
-                if (nextLine.length < 3) {
-                    continue; // ensure Lock Out column exists
-                }
-                String user = nextLine[0].trim();
-                String pass = nextLine[1].trim();
-                String lockoutStatus = nextLine[5].trim();
-
-                if (user.equalsIgnoreCase("username")) {
-                    continue;
-                }
-
-                credentials.put(user, new String[]{pass, lockoutStatus});
-            }
-
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this,
-                    "Error loading credentials:\n" + ex.getMessage(),
-                    "Load Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    private void updateLockoutStatusCSV(String userId, String status) {
+    private void updateLockoutStatusCSV(String empId, String newStatus) {
         try {
-            java.nio.file.Path path = java.nio.file.Paths.get(getClass().getResource("/com/csv/LoginCredentials.csv").toURI());
-            java.util.List<String> lines = java.nio.file.Files.readAllLines(path);
-            java.util.List<String> updated = new java.util.ArrayList<>();
-            for (String line : lines) {
-                if (line.startsWith(userId + ",")) {
-                    String[] parts = line.split(",", -1);
-                    if (parts.length >= 6) {
-                        parts[5] = status;
-                        updated.add(String.join(",", parts));
-                        continue;
+            List<String[]> rows = new ArrayList<>();
+
+            // read the whole file
+            try (CSVReader r = new CSVReader(Files.newBufferedReader(CRED_PATH))) {
+                String[] line;
+                while ((line = r.readNext()) != null) {
+                    if (line.length >= 6 && line[0].trim().equals(empId)) {
+                        line[5] = newStatus;        // 6th col = Lock Out Status
                     }
+                    rows.add(line);
                 }
-                updated.add(line);
             }
-            java.nio.file.Files.write(path, updated);
-        } catch (Exception ex) {
-            System.err.println("CSV lockout update failed: " + ex.getMessage());
+
+            // rewrite the file
+            try (CSVWriter w = new CSVWriter(
+                    Files.newBufferedWriter(CRED_PATH,
+                            StandardOpenOption.TRUNCATE_EXISTING))) {
+                w.writeAll(rows);
+            }
+
+        } catch (IOException | CsvValidationException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Unable to update " + CRED_PATH.toAbsolutePath()
+                    + "\n" + ex.getMessage(),
+                    "File Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -396,7 +396,9 @@ public class LoginForm extends javax.swing.JFrame {
 
         String pass = new String(jPasswordField1.getPassword());
 
+        Map<String, String[]> credentials = loadLoginCredentials();
         // Blank fields
+
         if (user.isEmpty() || user.equals("USERNAME")) {
             JOptionPane.showMessageDialog(this, "Please Enter Username & Password", "Missing Information", JOptionPane.WARNING_MESSAGE);
         } else if (pass.isEmpty() || pass.equals("PASSWORD")) {
@@ -408,8 +410,9 @@ public class LoginForm extends javax.swing.JFrame {
             return;
         } else {
             String[] cred = credentials.get(user);
-            String storedPass = cred[0];
-            String lockStatus = cred[1];
+            String storedPass = cred.length > 1 ? cred[1] : "";
+            String lockStatus = cred.length > 5 ? cred[5] : "No";
+            lockoutFlags.put(user, "Yes".equalsIgnoreCase(lockStatus));
             int attempts = failedAttempts.getOrDefault(user, 0);
             boolean isLocked = lockoutFlags.getOrDefault(user, false) || "Yes".equalsIgnoreCase(lockStatus);
             if (isLocked) {
