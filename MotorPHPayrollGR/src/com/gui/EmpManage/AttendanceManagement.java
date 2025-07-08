@@ -358,11 +358,14 @@ public class AttendanceManagement extends JFrame {
                     Date thr = tf.parse("8:45 AM");
                     long late = inT.after(thr) ? (inT.getTime() - thr.getTime()) / 60000 : 0;
                     long ot = Math.max(0, mins - 8 * 60);
+                    double hours = mins / 60.0;                     // total hours worked
+                    String duration = String.format("%.2f hrs", hours);
+
                     tableModel.addRow(new Object[]{
-                        ds,
-                        p[2].trim(),
-                        p[3].trim(),
-                        p[4].trim(),
+                        ds, // Date
+                        p[2].trim(), // Clock-In
+                        p[3].trim(), // Clock-Out
+                        duration, // Duration  <-- was p[4]
                         late > 0 ? late + " mins" : "-",
                         ot > 0 ? String.format("%.2f hrs", ot / 60.0) : "-",
                         "Present"
