@@ -140,6 +140,12 @@ public class LoginCredentialsView extends JPanel {
     }
 
     private void btnSaveActionPerformed(ActionEvent evt) {
+        if (table.isEditing()) {               
+            TableCellEditor ed = table.getCellEditor();
+            if (ed != null) {
+                ed.stopCellEditing();
+            }
+        }
         int confirm = JOptionPane.showConfirmDialog(this,
                 "Are you sure you want to apply changes?",
                 "Confirm Save", JOptionPane.YES_NO_OPTION);

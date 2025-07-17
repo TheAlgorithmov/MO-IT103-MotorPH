@@ -45,7 +45,6 @@ public class LoginForm extends javax.swing.JFrame {
     private final Map<String, Boolean> lockoutFlags = new HashMap<>();
     private static final int MAX_ATTEMPTS = 3;
     private static final int LOCKOUT_DURATION_MS = 60_000; // 1 minute for testing; use 300_000 for 5 mins
-    private static final String LOGIN_CSV = "/com/csv/loginCredentials.csv";
     private static final Path CRED_PATH = Paths.get("src", "com", "csv", "LoginCredentials.csv");
 
     // credentials.get("10001")[0] = password

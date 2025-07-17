@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.event.TableModelEvent;
+import javax.swing.table.DefaultTableCellRenderer;
 
 public class AttendanceManagement extends JFrame {
 
@@ -37,6 +38,25 @@ public class AttendanceManagement extends JFrame {
     private JComboBox<String> employeeSelector;
     private JDateChooser fromDatePicker, toDatePicker;
     private JLabel nameLabel; // displays Last, First of selected employee
+
+    private static String clean(String val) {
+        return (val == null || "-".equals(val.trim())) ? "" : val.trim();
+    }
+
+    private class TimeInputVerifier extends InputVerifier {
+
+        private static final String TIME_PATTERN = "^(0?[1-9]|1[0-2]):[0-5][0-9]\\s?(AM|PM)$";
+
+        @Override
+        public boolean verify(JComponent input) {
+            String text = ((JTextField) input).getText().trim().toUpperCase();
+            return text.matches(TIME_PATTERN);
+        }
+    }
+
+    private boolean isValidTimeFormat(String time) {
+        return time.matches("^(0?[1-9]|1[0-2]):[0-5][0-9]\\s?(AM|PM)$");
+    }
 
     public AttendanceManagement(User user) {
         this.currentUser = user;
@@ -126,9 +146,39 @@ public class AttendanceManagement extends JFrame {
             }
         };
         table = new JTable(tableModel);
+        table.setRowHeight(28);
+        DefaultTableCellRenderer paddedRenderer = new DefaultTableCellRenderer();
+        paddedRenderer.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // top, left, bottom, right
+        for (int i = 0; i < table.getColumnCount(); i++) {
+            table.getColumnModel().getColumn(i).setCellRenderer(paddedRenderer);
+        }
+
+        // ─── Enforce hh:mm AM/PM input for Clock In/Out ───────────────
+        InputVerifier timeVerifier = new TimeInputVerifier();
+        JTextField timeField = new JTextField();
+        timeField.setPreferredSize(new Dimension(100, 24)); // Wider editor field
+        timeField.setFont(new Font("Monospaced", Font.PLAIN, 12)); // Optional for better visibility
+
+        DefaultCellEditor timeEditor = new DefaultCellEditor(timeField) {
+            @Override
+            public boolean stopCellEditing() {
+                JTextField tf = (JTextField) getComponent();
+                if (!timeVerifier.verify(tf)) {
+                    JOptionPane.showMessageDialog(null,
+                            "Please enter time in hh:mm AM/PM format (e.g., 08:30 AM)",
+                            "Invalid Time", JOptionPane.ERROR_MESSAGE);
+                    return false;
+                }
+                return super.stopCellEditing();
+            }
+        };
+
+        // Set time editor on Clock In (index 1) and Clock Out (index 2) columns
+        table.getColumnModel().getColumn(1).setCellEditor(timeEditor);
+        table.getColumnModel().getColumn(2).setCellEditor(timeEditor);
         add(new JScrollPane(table), BorderLayout.CENTER);
 
-// ─── PERSIST INLINE EDITS ───────────────────────────────────────────────
+        // ─── PERSIST INLINE EDITS ───────────────────────────────────────────────
         tableModel.addTableModelListener(e -> {
             if (e.getType() != TableModelEvent.UPDATE) {
                 return;
@@ -303,20 +353,21 @@ public class AttendanceManagement extends JFrame {
     }
 
     private void loadAttendanceData(String empId) {
+
         File f = new File("src/com/csv/DTR/" + empId + ".csv");
         if (!f.exists()) {
             tableModel.setRowCount(0);
             return;
         }
 
+        /* ── read the employee’s CSV into a map keyed by Date ─────────── */
         Map<String, String[]> map = new HashMap<>();
-
-        try (CSVReader reader = new CSVReader(new FileReader(f))) {
-            reader.readNext();                // skip header
+        try (CSVReader r = new CSVReader(new FileReader(f))) {
+            r.readNext();                       // skip header
             String[] row;
-            while ((row = reader.readNext()) != null) {
-                if (row.length >= 5) {
-                    map.put(row[1].trim(), row);   // row[1] now has **no quotes**
+            while ((row = r.readNext()) != null) {
+                if (row.length >= 4) {
+                    map.put(row[1].trim(), row);   // key = Date “M/d/yyyy”
                 }
             }
         } catch (IOException | CsvValidationException ex) {
@@ -326,51 +377,69 @@ public class AttendanceManagement extends JFrame {
             return;
         }
 
+        /* ── figure out the date range ────────────────────────────────── */
         LocalDate start = fromDatePicker.getDate() != null
-                ? fromDatePicker.getDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+                ? fromDatePicker.getDate().toInstant()
+                        .atZone(ZoneId.systemDefault()).toLocalDate()
                 : LocalDate.now();
         LocalDate end = toDatePicker.getDate() != null
-                ? toDatePicker.getDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+                ? toDatePicker.getDate().toInstant()
+                        .atZone(ZoneId.systemDefault()).toLocalDate()
                 : start;
         if (end.isBefore(start)) {
             JOptionPane.showMessageDialog(this,
-                    "“To” date must be ≥ “From” date.",
-                    "Date Error", JOptionPane.WARNING_MESSAGE);
+                    "“To” date must be ≥ “From” date.", "Date Error",
+                    JOptionPane.WARNING_MESSAGE);
             return;
         }
 
+        /* ── paint the table ──────────────────────────────────────────── */
         tableModel.setRowCount(0);
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("M/d/yyyy");
+        DateTimeFormatter df = DateTimeFormatter.ofPattern("M/d/yyyy");
         SimpleDateFormat tf = new SimpleDateFormat("h:mm a");
+
         for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
-            String ds = d.format(fmt);
-            boolean weekend = (d.getDayOfWeek() == DayOfWeek.SATURDAY || d.getDayOfWeek() == DayOfWeek.SUNDAY);
+            String ds = d.format(df);
+            boolean weekend = d.getDayOfWeek() == DayOfWeek.SATURDAY
+                    || d.getDayOfWeek() == DayOfWeek.SUNDAY;
 
             if (map.containsKey(ds)) {
                 String[] p = map.get(ds);
+
+                /* early-out when both time cells are blank */
+                if (p[2].trim().isEmpty() && p[3].trim().isEmpty()) {
+                    tableModel.addRow(new Object[]{ds, "", "", "", "", "", "Absent"});
+                    continue;
+                }
+
                 try {
                     Date inT = tf.parse(p[2].trim());
                     Date outT = tf.parse(p[3].trim());
+
                     long mins = (outT.getTime() - inT.getTime()) / 60000;
                     if (mins < 0) {
-                        mins += 24 * 60;
+                        mins += 24 * 60;          // overnight shift
                     }
-                    Date thr = tf.parse("8:45 AM");
-                    long late = inT.after(thr) ? (inT.getTime() - thr.getTime()) / 60000 : 0;
-                    long ot = Math.max(0, mins - 8 * 60);
+                    long workMins = Math.max(0, mins - 60);   // minus lunch
+                    long lateMins = Math.max(0,
+                            (inT.after(tf.parse("8:45 AM")))
+                            ? (inT.getTime() - tf.parse("8:45 AM").getTime()) / 60000
+                            : 0);
+                    long otMins = Math.max(0, workMins - 8 * 60);
+
                     tableModel.addRow(new Object[]{
                         ds,
                         p[2].trim(),
                         p[3].trim(),
-                        p[4].trim(),
-                        late > 0 ? late + " mins" : "-",
-                        ot > 0 ? String.format("%.2f hrs", ot / 60.0) : "-",
+                        String.format("%.2f hrs", workMins / 60.0),
+                        lateMins > 0 ? lateMins + " mins" : "",
+                        otMins > 0 ? String.format("%.2f hrs", otMins / 60.0) : "",
                         "Present"
                     });
-                } catch (Exception ign) {
-                }
+                } catch (Exception ignore) {
+                    /* malformed time – skip row */ }
             } else if (!weekend && !d.isAfter(LocalDate.now())) {
-                tableModel.addRow(new Object[]{ds, "-", "-", "-", "-", "-", "Absent"});
+                tableModel.addRow(new Object[]{ds, "", "", "", "", "", "Absent"});
             }
         }
     }
@@ -466,11 +535,13 @@ public class AttendanceManagement extends JFrame {
      * 6=DTR Approved By, 7=DTR Approved Date, 8=DTR Status, 9=Payroll Approved
      * By, 10=Payroll Approved Date, 11=Payroll Status
      */
-    private void updateCsvCell(String empId, String date, int csvCol, String newValue) throws IOException {
+    private void updateCsvCell(String empId, String date,
+            int csvCol, String newValue) throws IOException {
+
         File f = new File(DTR_FOLDER + empId + ".csv");
         List<String[]> all = new ArrayList<>();
 
-        // 1) Read entire file (if it exists)
+        /* 1 ─ Read the whole file (if it already exists) */
         if (f.exists()) {
             try (CSVReader r = new CSVReader(new FileReader(f))) {
                 String[] row;
@@ -478,11 +549,12 @@ public class AttendanceManagement extends JFrame {
                     all.add(row);
                 }
             } catch (CsvValidationException ex) {
-                Logger.getLogger(AttendanceManagement.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(AttendanceManagement.class.getName())
+                        .log(Level.SEVERE, null, ex);
             }
         }
 
-        // 2) If empty, inject the new 11-column header
+        /* 2 ─ Ensure header is present */
         String[] header = {
             "Employee #", "Date", "Log In", "Log Out",
             "First Name", "Last Name",
@@ -493,10 +565,11 @@ public class AttendanceManagement extends JFrame {
             all.add(header);
         }
 
-        // 3) Look up this employee's name once
+        /* 3 ─ Fetch employee name only once */
         String fn = "", ln = "";
-        try (CSVReader rex = new CSVReader(new FileReader("src/com/csv/EmployeeData.csv"))) {
-            rex.readNext(); // skip
+        try (CSVReader rex = new CSVReader(
+                new FileReader("src/com/csv/EmployeeData.csv"))) {
+            rex.readNext();                         // skip header
             String[] rrow;
             while ((rrow = rex.readNext()) != null) {
                 if (rrow[0].trim().equals(empId)) {
@@ -506,51 +579,44 @@ public class AttendanceManagement extends JFrame {
                 }
             }
         } catch (Exception ign) {
-        }
+            /* ignore */ }
 
-        // 4) Find & update the matching date row
+        /* 4 ─ Try to update an *existing* row for this date */
         boolean found = false;
         for (int i = 1; i < all.size(); i++) {
             String[] row = all.get(i);
-            // ensure row has at least 11 entries
-            if (row.length < header.length) {
+
+            if (row.length < header.length) {                 // pad
                 row = Arrays.copyOf(row, header.length);
             }
             if (row[1].equals(date)) {
-                // fill in name columns if blank
-                if (row[4] == null || row[4].isEmpty()) {
-                    row[4] = fn;
-                }
-                if (row[5] == null || row[5].isEmpty()) {
-                    row[5] = ln;
-                }
-                // now update the one cell the user edited
-                row[csvCol] = newValue;
+                row[4] = clean(row[4].isEmpty() ? fn : row[4]);
+                row[5] = clean(row[5].isEmpty() ? ln : row[5]);
+                row[csvCol] = clean(newValue);
+                row[2] = clean(row[2]);
+                row[3] = clean(row[3]);
                 all.set(i, row);
                 found = true;
                 break;
             }
         }
 
-        // 5) If not found, append a new line with Date + edited cell + names
-        if (!found) {
+        /* 5 ─ OPTION A:  **only** append a new row when the value is real
+           (skip if it is just the "-" placeholder)                      */
+        if (!found && !newValue.trim().isEmpty()) {     // only for real values
             String[] newRow = new String[header.length];
             newRow[0] = empId;
             newRow[1] = date;
-            newRow[csvCol] = newValue;
+            newRow[2] = (csvCol == 2) ? newValue : "";
+            newRow[3] = (csvCol == 3) ? newValue : "";
             newRow[4] = fn;
             newRow[5] = ln;
-            // leave the rest (approval & payroll columns) blank or “Pending”
-            newRow[6] = "";         // DTR Approved By
-            newRow[7] = "";         // DTR Approved Date
-            newRow[8] = "Pending";   // DTR Status
-            newRow[9] = "";        // Payroll Approved By 
-            newRow[10] = "";       // Payroll Approved Date  
-            newRow[11] = "Pending";  // Payroll Status
+            newRow[8] = "Pending";
+            newRow[11] = "Pending";
             all.add(newRow);
         }
 
-        // 6) Write everything back out
+        /* 6 ─ Write everything back */
         try (CSVWriter w = new CSVWriter(new FileWriter(f))) {
             for (String[] row : all) {
                 w.writeNext(row);
@@ -779,17 +845,20 @@ public class AttendanceManagement extends JFrame {
     }
 
     private void openManualDTRDialog() {
+
         JDialog dialog = new JDialog((Frame) null, "Manual DTR Entry", true);
         dialog.setLayout(new GridLayout(5, 2, 10, 10));
 
         JDateChooser dateChooser = new JDateChooser();
         SpinnerDateModel timeModelIn = new SpinnerDateModel();
         JSpinner spinnerIn = new JSpinner(timeModelIn);
+        ((JSpinner.DefaultEditor) spinnerIn.getEditor()).getTextField().setEditable(false);
         spinnerIn.setEditor(new JSpinner.DateEditor(spinnerIn, "h:mm a"));
 
         SpinnerDateModel timeModelOut = new SpinnerDateModel();
         JSpinner spinnerOut = new JSpinner(timeModelOut);
         spinnerOut.setEditor(new JSpinner.DateEditor(spinnerOut, "h:mm a"));
+        ((JSpinner.DefaultEditor) spinnerOut.getEditor()).getTextField().setEditable(false);
 
         dialog.add(new JLabel("Date:"));
         dialog.add(dateChooser);
@@ -808,8 +877,8 @@ public class AttendanceManagement extends JFrame {
 
         saveButton.addActionListener(e -> {
             String date = new SimpleDateFormat("M/d/yyyy").format(dateChooser.getDate());
-            String timeIn = new SimpleDateFormat("h:mm a").format((Date) spinnerIn.getValue());
-            String timeOut = new SimpleDateFormat("h:mm a").format((Date) spinnerOut.getValue());
+            String timeIn = new SimpleDateFormat("h:mm a").format((Date) spinnerIn.getValue()).toUpperCase();
+            String timeOut = new SimpleDateFormat("h:mm a").format((Date) spinnerOut.getValue()).toUpperCase();
             String empID = (String) employeeSelector.getSelectedItem();
             logDTRChange(empID, "Manual DTR entry: " + timeIn + "–" + timeOut + " on " + date);
 
@@ -826,7 +895,14 @@ public class AttendanceManagement extends JFrame {
                         "Error saving manual entry:\n" + io.getMessage(),
                         "I/O Error", JOptionPane.ERROR_MESSAGE);
             }
-
+            // Validate the format before proceeding
+            if (!isValidTimeFormat(timeIn) || !isValidTimeFormat(timeOut)) {
+                JOptionPane.showMessageDialog(dialog,
+                        "Please enter valid time in format hh:mm AM/PM (e.g., 8:30 AM)",
+                        "Invalid Time Format",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
             // (3) Now update *just that row* in the tableModel so the UI matches:
             boolean found = false;
             for (int i = 0; i < tableModel.getRowCount(); i++) {
@@ -839,7 +915,7 @@ public class AttendanceManagement extends JFrame {
             }
             if (!found) {
                 // if it was an entirely new date, append it:
-                tableModel.addRow(new Object[]{date, timeIn, timeOut, "-", "-", "-", "Present"});
+                tableModel.addRow(new Object[]{date, timeIn, timeOut, "", "", "", "Present"});
             }
 
             dialog.dispose();
