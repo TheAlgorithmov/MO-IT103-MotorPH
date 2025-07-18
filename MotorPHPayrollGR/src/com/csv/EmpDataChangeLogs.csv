@@ -16,3 +16,5 @@ UPDATE,Super Admin,10035,ALL FIELDS,N/A,Record modified,2025-07-06 10:45:04,Appr
 UPDATE,Andrea Mae Villanueva,10035,ALL FIELDS,N/A,Record modified,2025-07-07 00:49:07,Approved,Employee data updated
 UPDATE,Andrea Mae Villanueva,10034,ALL FIELDS,N/A,Record modified,2025-07-07 00:49:35,Approved,Employee data updated
 UPDATE,Andrea Mae Villanueva,10035,ALL FIELDS,N/A,Record modified,2025-07-07 00:51:42,Approved,Employee data updated
+DELETE,Super Admin,10035,ALL FIELDS,N/A,Employee Deleted,2025-07-08 00:28:52,Approved,Record removed
+ADD,Super Admin,10035,ALL FIELDS,N/A,New Record,2025-07-08 00:30:18,Approved,New employee added

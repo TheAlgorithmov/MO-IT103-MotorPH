@@ -717,19 +717,13 @@ public class HomePage extends javax.swing.JFrame {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         // TODO add your handling code here:
-        if (currentUser.isLeadership()) {
-            // leadership → full EmployeeManagement
-            new EmployeeManagement(currentUser).setVisible(true);
-        } else {
-            // regular user → only their own editEmployee form
-            editEmployee panel = new editEmployee(currentUser, currentUser.getuEmpId());
-            JFrame frame = new JFrame("Update Profile — ID " + currentUser.getuEmpId());
-            frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-            frame.setContentPane(panel);
-            frame.pack();
-            frame.setLocationRelativeTo(this);
-            frame.setVisible(true);
-        }
+        editEmployee panel = new editEmployee(currentUser, currentUser.getuEmpId());
+        JFrame frame = new JFrame("Update Profile — ID " + currentUser.getuEmpId());
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frame.setContentPane(panel);
+        frame.pack();
+        frame.setLocationRelativeTo(this);
+        frame.setVisible(true);
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
