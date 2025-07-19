@@ -432,6 +432,28 @@ public class EmployeeManagement extends JFrame {
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
+// 4) remove from SupervisorLists.csv
+String supervisorListPath = "src/com/csv/SupervisorLists.csv";
+try {
+    List<String[]> rows;
+    try (CSVReader r = new CSVReader(new FileReader(supervisorListPath))) {
+        rows = r.readAll();
+    }
+    try (CSVWriter w = new CSVWriter(new FileWriter(supervisorListPath))) {
+        for (int i = 0; i < rows.size(); i++) {
+            String[] row = rows.get(i);
+            // Keep header or rows where empID does not match
+            if (i == 0 || !row[0].trim().equals(empID.trim())) {
+                w.writeNext(row);
+            }
+        }
+    }
+} catch (IOException | CsvException ex) {
+    JOptionPane.showMessageDialog(this,
+            "Error removing from SupervisorLists.csv:\n" + ex.getMessage(),
+            "I/O Error", JOptionPane.ERROR_MESSAGE);
+}
+
     /**
      * Deletes an employee from: - EmployeeData.csv - LoginCredentials.csv -
      * DTR/<empID>.csv
