@@ -41,7 +41,7 @@ import com.gui.Payroll.PayrollDisplay;
  *
  * @author ongoj
  */
-public class HomePage extends javax.swing.JFrame {
+public class MainDashboard extends javax.swing.JFrame {
 
     // To keep time logs for attendance
     private User currentUser; // Store the user info
@@ -68,7 +68,7 @@ public class HomePage extends javax.swing.JFrame {
     private PayrollDisplay payrollDisplay;
 
     // Constructor: receive User info
-    public HomePage(User user) {
+    public MainDashboard(User user) {
         this.currentUser = user;
         initComponents();
         // ── role-based button controls ───────────────────────────────
@@ -109,12 +109,12 @@ public class HomePage extends javax.swing.JFrame {
     }
 
     // Default constructor for GUI builder compatibility (not used in production)
-    public HomePage() {
+    public MainDashboard() {
         initComponents();
         startClock();
     }
 
-    HomePage(String user) {
+    MainDashboard(String user) {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
@@ -564,9 +564,9 @@ public class HomePage extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jLabel10, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jLabel12, javax.swing.GroupLayout.DEFAULT_SIZE, 23, Short.MAX_VALUE)
+                        .addComponent(jLabel12, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jLabel11, javax.swing.GroupLayout.DEFAULT_SIZE, 28, Short.MAX_VALUE))
+                        .addComponent(jLabel11, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addGroup(jPanel3Layout.createSequentialGroup()
                         .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -840,20 +840,21 @@ public class HomePage extends javax.swing.JFrame {
                 }
             }
         } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(HomePage.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(MainDashboard.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(HomePage.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(MainDashboard.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(HomePage.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(MainDashboard.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(HomePage.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(MainDashboard.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
+        //</editor-fold>
         //</editor-fold>
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new HomePage().setVisible(true);
+                new MainDashboard().setVisible(true);
             }
         });
     }
@@ -1043,7 +1044,7 @@ public class HomePage extends javax.swing.JFrame {
                 // show personalized welcome
                 JOptionPane.showMessageDialog(this, "Login successful.\nWelcome, " + user + "!", "Welcome", JOptionPane.INFORMATION_MESSAGE);
                 // pass the user along to the new frame
-                new HomePage(user).setVisible(true);
+                new MainDashboard(user).setVisible(true);
                 dispose();
             } else {
                 JOptionPane.showMessageDialog(this, "Invalid username or password.", "Error", JOptionPane.ERROR_MESSAGE);

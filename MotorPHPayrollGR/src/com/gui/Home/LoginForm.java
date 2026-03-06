@@ -488,7 +488,7 @@ public class LoginForm extends javax.swing.JFrame {
                             "Welcome",
                             JOptionPane.INFORMATION_MESSAGE
                     );
-                    new HomePage(loggedUser).setVisible(true);
+                    new MainDashboard(loggedUser).setVisible(true);
                     dispose();
                 } else {
                     JOptionPane.showMessageDialog(

@@ -9,27 +9,25 @@ package com.gui.Home;
  * @author Miles & JEO
  */
 public class User {
-    private String uEmpId;
-    private String uFirstName;
-    private String uLastName;
-    private String uDob;
-    private String uPosition;
-    private String uStatus;
-    private String uPhoneNumber;
-    private String uImmediateSupervisor;
-    private String uBasicSalary;
-    private String uHourlyRate;
-    private String uRiceSubsidy;
-    private String uPhoneAllowance;
-    private String uClothingAllowance;
-    private String uGrossSemiRate;
-    private String uSSS;
-    private String uPhilHealth;
-    private String uTIN;
-    private String uPagIbig;
-    private String uAddress;
-    private String uFirstname;
-    private String uLastname;
+    private final String uEmpId;
+    private final String uFirstName;
+    private final String uLastName;
+    private final String uDob;
+    private final String uPosition;
+    private final String uStatus;
+    private final String uPhoneNumber;
+    private final String uImmediateSupervisor;
+    private final String uBasicSalary;
+    private final String uHourlyRate;
+    private final String uRiceSubsidy;
+    private final String uPhoneAllowance;
+    private final String uClothingAllowance;
+    private final String uGrossSemiRate;
+    private final String uSSS;
+    private final String uPhilHealth;
+    private final String uTIN;
+    private final String uPagIbig;
+    private final String uAddress;
     
         public User(String uEmpId, String uFirstName, String uLastName, String uDob,
                 String uHourlyRate, String uRiceSubsidy, String uPhoneAllowance, String uClothingAllowance,
@@ -79,34 +77,16 @@ public class User {
         public String getuAddress() { return uAddress; }
         
         public boolean isLeadership() {
-        switch (uPosition) {
-            case "Chief Executive Officer":
-            case "Chief Operating Officer":
-            case "Chief Finance Officer":
-            case "Chief Marketing Officer":
-            case "IT Operations and Systems":
-            case "Account Manager":
-            case "Accounting Head":
-            case "HR Manager":
-            case "HR Team Leader":
-            case "Payroll Team Leader":
-            case "Account Team Leader":
-            case "Payroll Manager":
-                return true;
-            default:
-                return false;
-        }
+        return switch (uPosition) {
+            case "Chief Executive Officer", "Chief Operating Officer", "Chief Finance Officer", "Chief Marketing Officer", "IT Operations and Systems", "Account Manager", "Accounting Head", "HR Manager", "HR Team Leader", "Payroll Team Leader", "Account Team Leader", "Payroll Manager" -> true;
+            default -> false;
+        };
   }
             public boolean isFinanceRole() {
-        switch (uPosition) {
-            case "Chief Finance Officer":
-            case "Payroll Manager":
-            case "Payroll Team Leader":
-            case "Payroll Rank and File":
-                return true;
-            default:
-                return false;
-        }
+        return switch (uPosition) {
+            case "Chief Finance Officer", "Payroll Manager", "Payroll Team Leader", "Payroll Rank and File" -> true;
+            default -> false;
+        };
     }
 
             public boolean isITRole() {
@@ -114,22 +94,20 @@ public class User {
             }
 
             public boolean isHRRole() {
-                switch (uPosition) {
-                    case "HR Manager":
-                    case "HR Team Leader":
-                    case "HR Rank and File":
-                        return true;
-                    default:
-                        return false;
-                }
+        return switch (uPosition) {
+            case "HR Manager", "HR Team Leader", "HR Rank and File" -> true;
+            default -> false;
+        };
             }
 
-            /** Leadership, IT or HR can access full Employee Management */
+            /** Leadership, IT or HR can access full Employee Management
+     * @return  */
             public boolean canAccessEmployeeManagement() {
                 return isLeadership() || isITRole() || isHRRole();
             }
 
-            /** Only finance/payroll positions can access Payroll Management */
+            /** Only finance/payroll positions can access Payroll Management
+     * @return  */
             public boolean canAccessPayrollManagement() {
                 return isFinanceRole();
             }
